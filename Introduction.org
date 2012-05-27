@@ -1,0 +1,3 @@
+* Porting PAIP to clojure - introduction
+** What is PAIP ?
+   PAIP stands for Paradigms of artificial intelligence programming
