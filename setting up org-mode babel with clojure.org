@@ -1,0 +1,128 @@
+* Setting up org-mode babel with clojure 
+  For my new series 'Porting PAIP to clojure' I plan to write my blogposts as literate programming files
+  using emacs org-mode with babel set up for clojure. This file can be exportet to html using org-publish-as-html
+  and posted on my blog.
+  I was glad to notice that clojure is [[http://orgmode.org/worg/org-contrib/babel/languages.html][one of the supported languages]] of babel
+** Setting up babel to work with clojure 
+   There is a [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-clojure.html][Instruction page]] for setting up Org-babel-clojure.
+   However, It is outdated (It [[http://lists.gnu.org/archive/html/emacs-orgmode/2012-01/msg00507.html][depends on the deprecated swank-clojure]] and doesn't work with the normal
+   clojure + emacs setup described [[http://dev.clojure.org/display/doc/Getting+Started+with+Emacs][here]].
+*** A partial Solution
+    After googling a bit I found out that you seem to need [[http://nakkaya.com/2010/12/12/using-clojure-with-org-babel-and-inferior-lisp/][this code]] to set it up:
+    #+begin_src elisp
+    (require 'ob)
+
+    (add-to-list 'org-babel-tangle-lang-exts '("clojure" . "clj"))
+    
+    (defvar org-babel-default-header-args:clojure 
+    '((:results . "silent") (:tangle . "yes")))
+    
+    (defun org-babel-execute:clojure (body params)
+    "Evaluate a block of Clojure code with Babel."
+    (lisp-eval-string body)
+    "Done!")
+    
+    (provide 'ob-clojure)
+    #+end_src
+
+    There is only one problem: It doesn't work with a clojure-slime session started.
+    It gives a  Symbol's function definition is void: lisp-eval-string Error.
+    This seemed very strange to me because apparently no one but me had this error.
+    I spend a bit time searching where the function (lisp-eval-string) is defined. 
+    The solution (which seems now very naturally to me but costed my half an hour to find out) is that you have
+    to use clojure with Inferior-lisp instead of slime.
+    So add the following line to your .emacs
+    #+begin_src elisp
+    (setq inferior-lisp-program "lein repl")
+    #+end_src
+    Then, running M-x run-lisp starts a repl with the correct classpath set up for you.
+    
+    When you followed the steps, running C-c C-c in a clojure source blog sends the s-exp to your *inferior-lisp*
+    buffer where it is evaluated.
+
+    With this I have a miminally usable set up for org-mode-babel and clojure and are ready to start using it for
+    porting PAIP to clojure.
+*** Missing features
+    It turns out that only the most basic functionality is available with this setup.
+    According to the [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-clojure.html][instruction page]] org-babel supports sessions and you can specify whether the result is shown
+    in the org-mode buffer when evaluated. 
+**** Results
+     As example, insert this code blog in a .org file
+     #+BEGIN_EXAMPLE quoted text
+     #+name: basic-session-clojure-table-results
+     #+begin_src clojure :session s1 :results value
+       	[ 1 2 3 4]
+     #+end_src
+     #+END_EXAMPLE
+     and evaluate C-c C-c whith the point within the source block.
+     the instruction page says that the following block should have been inserted:
+     #+BEGIN_EXAMPLE quoted text
+     #+resname: basic-session-clojure-table-results
+     | 1 | 2 | 3 | 4 |
+     #+END_EXAMPLE
+     (the vector has been automagically converted to an org-mode table)
+
+     This doesn't work with this setup, because (lisp-eval-string text) returns nil. The result is only 
+     shown in the *inferior-lisp* buffer and I don't know if there is a way getting the result back.
+
+     But with emacs, I was able to automate the process of getting the results from the *inferior-lisp* buffer using
+     a keyboard-macro. The macro consists of the following steps:
+       	1. Execute C-c C-c
+       	2. M-x b to the *inferior-lisp* buffer
+       	the s-exp has now been evaluated and a new user> line was printed. 
+       	3. Go one line up and copy everything starting after user> to get the result
+       	4. Switch to the org-buffer again
+       	5. Copy the result - I insert following text: ;=> result 
+       	6. Switch to the *inferior-lisp* buffer again
+       	7. place cursor at it's original position that is at the end of the buffer
+       	8. Switch to the org-bugger
+      It is a rather lengthy kbd-macro but it does it's job. I recommend that you name it so that you don't have to
+      define it again and again :) (emacs supports the lazy one)
+
+      I think it would be better to implement that as a elisp function but I don't know enough emacs-lis to do this.
+      Any help would be appreciated
+**** Sessions
+     Org-mode-babel has also support for multiple sessions which run independend from another.
+     Consider following example (also from the instruction page)
+     #+BEGIN_EXAMPLE quoted text
+     #+name: set-clojure-session-var-s1
+     #+begin_src clojure :session s1 :results value
+     (def *var* [1 2 3])
+     #+end_src
+          
+     #+name: set-clojure-session-var-s2
+     #+begin_src clojure :session s2 :results value
+     (def *var* [3 4 5 6 7 8 9])
+     #+end_src
+          
+     #+name: get-clojure-session-var-s1
+     #+begin_src clojure :session s1 :results value
+     (count *var*)
+     #+end_src
+          
+     #+name: get-clojure-session-var-s2
+     #+begin_src clojure :session s2 :results value
+     (count *var*)
+     #+end_src
+     #+END_EXAMPLE
+
+     This should open 2 slime-sessions and insert the results after the src-blocks.
+     It doesn't work too. org-babel clojure isn't able to start a slime-session.
+     I have not implemented a workaround for this because I think I won't need it right now, but
+     here are my thoughts of how to implement sessions:
+     
+     When org-babel clojure should start a session it first checks whether a Buffer with the session name
+     already exists. If not, it runs the run-lisp command and renames the *inferior-lisp* buffer to the session's name.
+     If it exists it sets the buffer to the actual inferior lisp buffer according to the comment [[http://www.audacity-forum.de/download/edgar/nyquist/nyquist-doc/examples/emacs/sources/inferior-lisp.html][here]].
+     After this it runs a function to get the result from the buffer and inserts it after the src blog
+     (see the section results above)
+
+** Final thoughts
+   org-mode + babel is a great tool for literate programming.
+   Althoug the described setup is outdated and doesn't work know, with the setup descripbed above you can use the
+   basic features of org-babel-clojure. The not language agnostic functions are working of course!
+
+   I am thankfull for any comment/recommendation regarding the setup and for advice/help how to implement this in
+   emacs lisp and contributing it back to org-babel.
+
+   
