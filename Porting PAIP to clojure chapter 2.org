@@ -2,6 +2,8 @@
 * Porting PAIP to clojure - chapter 2 A Simple Lisp Program
 ** Introduction
    This is the first post of my series porting PAIP to clojure.
+   It is possible to follow my post even if you don't have a copy of PAIP but I strongly recommend that you get a copy
+   of it.
    This chapter contains a program to generate random sentences using a grammar for a subset of english.
    Norvig presents two versions of the program, a straightforward solution using functions to represent grammar
    rules. Then the weaknesses of this approach are shown and a better solution is developed using a rule-based solution.
@@ -20,7 +22,7 @@
      The rule Article => the, a, ...  means: An article is either the or a or ... (Article = the | a | ...)
      
 *** The Program
-    Here is the Common Lisp code. It can be found [[http://norvig.com/paip/README.html][here]].
+    That is the Common Lisp code. It can be found [[http://norvig.com/paip/README.html][here]].
     #+begin_src common lisp
     (defun sentence ()    (append (noun-phrase) (verb-phrase)))
     (defun noun-phrase () (append (Article) (Noun)))
@@ -78,7 +80,153 @@
         nil
         (concat (Adj) (Adj*))))
     #+end_src
-    There has to be a better way... enter the rule-based solution
-** A Rule-Based Solution
-** Advantages of the Rule-Based Solution
+    There has to be a better way... enter the data-driven solution!
+** A data-driven solution
+   The naive solution is straightforward to implement while making it harder to encode the grammar rules.
+   By using a data-driven approach, it is the other war round. Writing grammar rules becomes easy while implementation
+   may become harder. So let's take a look how the data-driven solution works for this problem.
+   The first step is to decouple the grammar from the code which processes it.
+*** The representation of the grammar
+    In the book Norvig represents the grammar with the following datastructure:
+    #+begin_src common lisp
+    (defparameter *simple-grammar*
+    '((sentence -> (noun-phrase verb-phrase))
+     (noun-phrase -> (Article Noun))
+     (verb-phrase -> (Verb noun-phrase))
+     (Article -> the a)
+     (Noun -> man ball woman table)
+      (Verb -> hit took saw liked))
+   "A grammar for a trivial subset of English.")
+    #+end_src
+    Here the grammar rule sentence => noun-phrase + verb_phrase gets translated to (sentence -> (noun-phrase verb-phrase))
+    So a list of elements means "produce this nonterminals in sequence". Multiple nonterminals right of the -> sign mean
+    "choose one of this nonterminals". Every rule is itself a list and the grammar is a list of rules.
+    This is a good showcase of the power of lisps to write internal DSLs btw.
+
+    But this representation is not really clojureish?.
+    We can take advantage of clojures literal representation for maps,vectors and sets in addition to lists. With this, the
+    meaning of a datastructure- when choosen appropriate- becomes more clear. Let me give you an example:
+    What are grammar rules? Rules map a nonterminal to - posible multiple - nonterminals or terminals. Thus it is appropriate
+    to represent them as a map in clojure. I choose to represent the nonterminals as keywords and the values of the map as
+    either one element or a vector of multiple elements. A vector means: "apply all elements in order".
+    Norvig represents a choice of nonterminals as simply the nonterminals written after the -> sign.
+    For me, it was not clear at the beginning that that means "choose one of these nonterminals".
+    In clojure, it is natural represent this with a set!
+    Rewritten, the grammar becomes the following:
+    #+begin_src clojure
+    (def simple-grammar
+   {:sentence [:noun-phrase :verb-phrase]
+    :noun-phrase [:Article :Noun]
+    :verb-phrase [:Verb :noun-phrase]
+    :Article #{"the" "a"}
+    :Noun #{"man" "ball" "woman" "table"}
+    :Verb #{"hit" "took" "saw" "liked"}})
+
+    (def ^:dynamic *grammar* simple-grammar)
+    #+end_src
+    Ok that's for the design part. Now that we have a good representation of our data, the grammar, we have to worry
+    about evaluating it.
+*** Evaluating the grammar
+    Because I choose a different and more ideomatic representation of the grammar in clojure, the code for evaluating
+    the grammar will obviosly be different than the code in PAIP. So I won't literatly translate the code here, but
+    instead post the code to evaluate my representation of the grammar.
+    
+    So, how can we generate a possible sentence: 
+    the function 'generate' will take the startsymbol as argument and retrieves the rule from the grammar.
+    If there is not a rule for the argument in the grammar, the argument itself is evaluated (thus making it possible
+    to call generate either with the left hand or the right hand side of a rule).
+    It will work the elements of the rule in sequence, appending the result as it goes along. When it encounters
+    a set, it will generate one random element of it. When it encounters a nonterminal - (which is itself element of the grammar(),
+    it recursively generates the nonterminal. If it encounters a terminal, that is none of the above are true it just
+    returns an single-element vector of it.
+    #+begin_src clojure
+    (defn generate [phrase]
+        (cond (get *grammar* phrase) (generate (get *grammar* phrase))
+              (sequential? phrase) (mapcat generate phrase)
+              (set? phrase)  (generate (rand-nth (seq phrase)))
+              :else [phrase]))
+    #+end_src
+    Amazing how closely the code mimics the description.
+    The book states that this is called data-driven programming and that it has the advantage to be able to change the
+    data without having to modify the original program.
+
+    So now we have code to evaluate the grammar. Let's take a look at a more complicated example and see how the
+    data-driven approach scales. Here's the bigger grammar:
+    #+begin_src clojure
+    (def ^:dynamic *bigger-grammar*
+    '{:sentence [:noun-phrase :verb-phrase]
+      :noun-phrase #{[:Article :Adj* :Noun :PP*] :Name :Pronoun}
+      :verb-phrase [:Verb :noun-phrase :PP*]
+      :PP* #{[] [:PP :PP*]}
+      :Adj* #{[] [:Adj :Adj*]}
+      :PP [:Prep :noun-phrase]
+      :Prep #{"to" "in" "by" "with" "on"}
+      :Adj #{"big" "little" "blue" "green" "adiabatic"}
+      :Article #{"the" "a"}
+      :Name #{"Pat" "Kim" "Lee" "Terry" "Robin"}
+      :Noun #{"man" "ball" "woman" "table"}
+      :Verb #{"hit" "took" "saw" "liked"}
+      :Pronoun #{"he" "she" "it" "these" "those" "that"}
+     })
+    (def ^:dynamic *grammar* *bigger-grammar*)
+    #+end_src
+    Let's generate 10 sentences again:
+    #+begin_src clojure
+    (take 10 (repeatedly #(generate :sentence)))
+    
+    (("these" "liked" "a" "ball")
+     ("a" "ball" "in" "the" "big" "green" "big" "woman" "in" "that" "by" "Terry" "liked" "a" "man")
+     ("that" "liked" "that")
+     ("Lee" "hit" "it")
+     ("Lee" "took" "Lee")
+     ("the" "little" "blue" "little" "ball" "in" "Terry" "by" "Robin" "liked" "Pat")
+     ("a" "adiabatic" "blue" "blue" "ball" "saw" "the" "man" "in" "Pat" "by" "Lee" "on" "a" "adiabatic" "table" "in" "Terry")
+     ("Pat" "hit" "Robin" "to" "those")
+     ("those" "liked" "the" "woman" "with" "Robin" "with" "these" "in" "the" "table" "to" "Robin" "to" "a" "blue" "adiabatic" "ball" "with" "she" "on" "those" "on" "those")
+     ("it" "hit" "Kim" "on" "she" "on" "the" "table"))
+    #+end_src
+    It works! Enjoy the funny sentences.
+    But hey,I want to see how the sentences are generated, I want to see the parse-tree.
+    Because of the data-driven design, it is easy to implement this. The data doesn't need to be changed, we need
+    only a new evaluation-function. 
+    #+begin_src clojure
+    (defn generate-all [phrase]
+      (let [rule phrase]
+        (cond (sequential? rule) (mapcat generate-all rule)
+              (set? rule)  (generate-all (rand-nth (seq rule)))
+              (get *grammar* phrase)  (list phrase (generate-all (get *grammar* phrase)))
+              :else phrase)))
+
+    (generate-all :sentence)
+    ;=>
+        (:sentence 
+          (:noun-phrase 
+             (:Name "Kim")
+           :verb-phrase 
+             (:Verb "saw"
+              :noun-phrase 
+                (:Article "the"
+                 :Adj* 
+                   (:Adj "adiabatic" 
+                    :Adj* ())
+                 :Noun "ball" 
+                 :PP* ())
+              :PP* ())))
+    #+end_src
+    
+   Norvig gives a last example of a generate-all function which works on the smple grammar and returns all possible
+   sentences defined by the grammar (the language of the grammar). I leaf the implementation to the reader :)
+   
+** Advantages of the data-driven solution 
+   Gratulations for making it through the post.
+   With this chapter, Norvig makes a strong point which will be even more important in the next chapters ( and is
+   for programming in general)
+   If you use the data-driven approach, you use "the most natural notation available to solve the problem".
+   So instead of worrying how to implement the problem, worry about how to represent you data, so that it is easy
+   to understand and to scale it.
+   With the data-driven solution, you can
+   - expand and modify the program easier
+   - use different datasets with the same evaluation function
+   - use different evaluation functions with the same dataset
+   - represent your problem so that it is easier to understand.
 
