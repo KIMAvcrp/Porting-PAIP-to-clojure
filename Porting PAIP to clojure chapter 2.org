@@ -1,0 +1,84 @@
+#+STARTUP: showall
+* Porting PAIP to clojure - chapter 2 A Simple Lisp Program
+** Introduction
+   This is the first post of my series porting PAIP to clojure.
+   This chapter contains a program to generate random sentences using a grammar for a subset of english.
+   Norvig presents two versions of the program, a straightforward solution using functions to represent grammar
+   rules. Then the weaknesses of this approach are shown and a better solution is developed using a rule-based solution.
+   Afterwards, the advantages of the rule-based approach are discussed.
+   This is a example of the typical pattern of the book: the examples are not presentet in there final form but are
+   iteratively developed. This makes PAIP one of the best programming books out there.
+** Generating random Sentences
+***  The Grammar
+     Sentence => Noun-Phrase + Verb-Phrase
+     Noun-Phrase => Article + Noun
+     ...
+     Article => the, a, ....
+     ...
+     A rule consists either of two or more non-terminals like Noun-phrase or of a collection of terminals like the, a,...
+     This representation is very natural if you have ever worked with context-free grammars before.
+     The rule Article => the, a, ...  means: An article is either the or a or ... (Article = the | a | ...)
+     
+*** The Program
+    Here is the Common Lisp code. It can be found [[http://norvig.com/paip/README.html][here]].
+    #+begin_src common lisp
+    (defun sentence ()    (append (noun-phrase) (verb-phrase)))
+    (defun noun-phrase () (append (Article) (Noun)))
+    (defun verb-phrase () (append (Verb) (noun-phrase)))
+    (defun Article ()     (one-of '(the a)))
+    (defun Noun ()        (one-of '(man ball woman table)))
+    (defun Verb ()        (one-of '(hit took saw liked)))
+    #+end_src
+    The translation to clojure is straightforward. But I will use a slightly modified version which is, as I think,
+    a little bot more ideomatic in clojure:
+    #+begin_src clojure
+    (declare sentence noun-phrase verb-phrase article noun verb one-of)
+
+    (defn  sentence [] (concat (noun-phrase) (verb-phrase)))
+    (defn  noun-phrase [] (concat (article) (noun)))
+    (defn  verb-phrase [] (concat (verb) (noun-phrase)))
+    (defn  article [] (one-of ["the" "a"]))
+    (defn  noun [] (one-of ["man" "ball" "woman" "table"]))
+    (defn  verb [] (one-of ["hit" "took" "saw" "liked"]))
+    #+end_src
+    I use vectors to represent collections and strings instead of symbols. here are the helper-functions:
+    one-of picks one element of the collection and returns a single-element collection containing it.
+    #+begin_src clojure
+    (defn one-of [coll]
+      (if (seq coll)
+       [(rand-nth coll)]))
+    #+end_src
+    To test, lets get 10 random sentences
+    #+begin_src clojure
+    (take 10 (repeatedly sentence))   
+    #+end_src
+    this evaluates to:
+    #+begin_src clojure
+    (("a" "ball" "liked" "the" "ball")
+    ("the" "table" "took" "the" "ball")
+    ("the" "man" "took" "a" "man")
+    ("the" "woman" "saw" "a" "man")
+    ("a" "ball" "hit" "the" "ball")
+    ("a" "table" "hit" "the" "man")
+    ("a" "ball" "took" "a" "ball")
+    ("a" "man" "liked" "a" "ball")
+    ("a" "table" "saw" "the" "ball")
+    ("the" "woman" "hit" "a" "ball"))
+    #+end_src 
+    I believe it is apparent that this is not a good representation for a grammar. The lisp functions are definitly
+    harder to read than the normal grammar syntax shown above.
+    If you wanted to represent the following rule:
+    Adj* => e,Adj + Adj*
+    (note that e is the empty symbol)
+    you would have to write a function like this:
+    #+begin_src clojure
+    (declare Adj)
+    (defn Adj* []
+      (if (= (rand-int 2) 0)
+        nil
+        (concat (Adj) (Adj*))))
+    #+end_src
+    There has to be a better way... enter the rule-based solution
+** A Rule-Based Solution
+** Advantages of the Rule-Based Solution
+

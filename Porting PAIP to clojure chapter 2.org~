@@ -1,0 +1,5 @@
+* Porting PAIP to clojure - chapter 2
+** Introduction
+** Generating random Sentences
+** A Rule-Based Solution
+** Advantages of the Rule-Based Solution

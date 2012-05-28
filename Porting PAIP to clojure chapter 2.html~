@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Porting PAIP to clojure chapter 2</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="Porting PAIP to clojure chapter 2"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2012-05-28T09:48+0200"/>
+<meta name="author" content="kima"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">Porting PAIP to clojure chapter 2</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Porting PAIP to clojure - chapter 2 A Simple Lisp Program</a>
+<ul>
+<li><a href="#sec-1-1">1.1 Introduction</a></li>
+<li><a href="#sec-1-2">1.2 Generating random Sentences</a>
+<ul>
+<li><a href="#sec-1-2-1">1.2.1 The Grammar</a></li>
+<li><a href="#sec-1-2-2">1.2.2 The Program</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-3">1.3 A Rule-Based Solution</a></li>
+<li><a href="#sec-1-4">1.4 Advantages of the Rule-Based Solution</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Porting PAIP to clojure - chapter 2 A Simple Lisp Program</h2>
+<div class="outline-text-2" id="text-1">
+
+
+</div>
+
+<div id="outline-container-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Introduction</h3>
+<div class="outline-text-3" id="text-1-1">
+
+<p>   This is the first post of my series porting PAIP to clojure.
+   This chapter contains a program to generate random sentences using a grammar for a subset of english.
+   Norvig presents two versions of the program, a straightforward solution using functions to represent grammar
+   rules. Then the weaknesses of this approach are shown and a better solution is developed using a rule-based solution.
+   Afterwards, the advantages of the rule-based approach are discussed.
+   This is a example of the typical pattern of the book: the examples are not presentet in there final form but are
+   iteratively developed. This makes PAIP one of the best programming books out there.
+</p></div>
+
+</div>
+
+<div id="outline-container-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Generating random Sentences</h3>
+<div class="outline-text-3" id="text-1-2">
+
+
+</div>
+
+<div id="outline-container-1-2-1" class="outline-4">
+<h4 id="sec-1-2-1"><span class="section-number-4">1.2.1</span> The Grammar</h4>
+<div class="outline-text-4" id="text-1-2-1">
+
+<p>     Sentence =&gt; Noun-Phrase + Verb-Phrase
+     Noun-Phrase =&gt; Article + Noun
+     &hellip;
+     Article =&gt; the, a, &hellip;.
+     &hellip;
+     A rule consists either of two or more non-terminals like Noun-phrase or of a collection of terminals like the, a,&hellip;
+     This representation is very natural if you have ever worked with context-free grammars before.
+     The rule Article =&gt; the, a, &hellip;  means: An article is either the or a or &hellip; (Article = the | a | &hellip;)
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-1-2-2" class="outline-4">
+<h4 id="sec-1-2-2"><span class="section-number-4">1.2.2</span> The Program</h4>
+<div class="outline-text-4" id="text-1-2-2">
+
+<p>    Here is the Common Lisp code. It can be found <a href="http://norvig.com/paip/README.html">here</a>.
+</p>
+
+
+<pre class="example">(defun sentence ()    (append (noun-phrase) (verb-phrase)))
+(defun noun-phrase () (append (Article) (Noun)))
+(defun verb-phrase () (append (Verb) (noun-phrase)))
+(defun Article ()     (one-of '(the a)))
+(defun Noun ()        (one-of '(man ball woman table)))
+(defun Verb ()        (one-of '(hit took saw liked)))
+</pre>
+
+<p>
+    The translation to clojure is straightforward. But I will use a slightly modified version which is, as I think,
+    a little bot more ideomatic in clojure:
+</p>
+
+
+<pre class="example">(declare sentence noun-phrase verb-phrase Article Noun Verb one-of)
+
+(defn  sentence [] (concat (noun-phrase) (verb-phrase)))
+(defn  noun-phrase [] (concat (Article) (Noun)))
+(defn  verb-phrase [] (concat (Verb) (noun-phrase)))
+(defn  Article [] (one-of '[the a]))
+(defn  Noun [] (one-of '[man ball woman table]))
+(defn  Verb [] (one-of '[hit took saw liked]))
+</pre>
+
+
+
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> A Rule-Based Solution</h3>
+<div class="outline-text-3" id="text-1-3">
+
+</div>
+
+</div>
+
+<div id="outline-container-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Advantages of the Rule-Based Solution</h3>
+<div class="outline-text-3" id="text-1-4">
+
+
+</div>
+</div>
+</div>
+</div>
+
+<div id="postamble">
+<p class="date">Date: 2012-05-28T09:48+0200</p>
+<p class="author">Author: kima</p>
+<p class="creator">Org version 7.8.09 with Emacs version 23</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>
