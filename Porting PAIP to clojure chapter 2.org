@@ -1,5 +1,5 @@
 #+STARTUP: showall
-* Porting PAIP to clojure - chapter 2 A Simple Lisp Program
+* Porting PAIP to clojure - chapter 2 A Simple Lisp Program or to use the best notation available to solve you problem
 ** Introduction
    This is the first post of my series porting PAIP to clojure.
    It is possible to follow my post even if you don't have a copy of PAIP but I strongly recommend that you get a copy
@@ -219,8 +219,8 @@
    
 ** Advantages of the data-driven solution 
    Gratulations for making it through the post.
-   With this chapter, Norvig makes a strong point which will be even more important in the next chapters ( and is
-   for programming in general)
+   With this chapter, Norvig makes a strong point which will be even more important in the next chapters (and is
+   for programming in general).
    If you use the data-driven approach, you use "the most natural notation available to solve the problem".
    So instead of worrying how to implement the problem, worry about how to represent you data, so that it is easy
    to understand and to scale it.
