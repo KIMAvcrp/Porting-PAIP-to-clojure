@@ -1,5 +1,5 @@
 #+STARTUP: showall
-* Porting PAIP to clojure - chapter 2 A Simple Lisp Program or to use the best notation available to solve you problem
+* Porting PAIP to clojure - chapter 2 A Simple Lisp Program or use the best notation available to solve you problem
 ** Introduction
    This is the first post of my series porting PAIP to clojure.
    It is possible to follow my post even if you don't have a copy of PAIP but I strongly recommend that you get a copy
