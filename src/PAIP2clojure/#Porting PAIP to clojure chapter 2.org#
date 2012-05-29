@@ -1,4 +1,9 @@
-#+STARTUP: showall
+#+TITLE: Porting PAIP to clojure chapter 2 
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+BABEL: :results output :exports both :tangle yes 
+#+STARTUP:showall
+-----
 * Porting PAIP to clojure - chapter 2 A Simple Lisp Program or use the best notation available to solve you problem
 ** Introduction
    This is the first post of my series porting PAIP to clojure.
@@ -33,19 +38,19 @@
     #+end_src
     The translation to clojure is straightforward. But I will use a slightly modified version which is, as I think,
     a little bot more ideomatic in clojure:
-    #+begin_src clojure
-    (declare sentence noun-phrase verb-phrase article noun verb one-of)
-
-    (defn  sentence [] (concat (noun-phrase) (verb-phrase)))
-    (defn  noun-phrase [] (concat (article) (noun)))
-    (defn  verb-phrase [] (concat (verb) (noun-phrase)))
-    (defn  article [] (one-of ["the" "a"]))
-    (defn  noun [] (one-of ["man" "ball" "woman" "table"]))
-    (defn  verb [] (one-of ["hit" "took" "saw" "liked"]))
+    #+begin_src clojure :results output :exports both
+      (declare sentence noun-phrase verb-phrase article noun verb one-of)
+      
+      (defn  sentence [] (concat (noun-phrase) (verb-phrase)))
+      (defn  noun-phrase [] (concat (article) (noun)))
+      (defn  verb-phrase [] (concat (verb) (noun-phrase)))
+      (defn  article [] (one-of ["the" "a"]))
+      (defn  noun [] (one-of ["man" "ball" "woman" "table"]))
+      (defn  verb [] (one-of ["hit" "took" "saw" "liked"]))
     #+end_src
 
     #+RESULTS:
-    : ;;=> #'user/verb
+    : => #'user/verb
 
     I use vectors instead of lists and strings instead of symbols. here are the helper-functions:
     one-of picks one element of the collection and returns a single-element collection containing it.
@@ -56,13 +61,17 @@
     #+end_src
 
     #+RESULTS:
-    : ;;=> #'user/one-of
+    : => #'user/one-of
 
     To test, let's get 10 random sentences:
     #+name: basic
     #+begin_src clojure :results value
     (take 10 (repeatedly sentence))   
     #+end_src
+
+    #+RESULTS: basic
+    : => (("the" "table" "hit" "a" "man") ("the" "table" "liked" "the" "woman") ("a" "woman" "hit" "a" "woman") ("a" "ball" "took" "the" "woman") ("a" "ball" "took" "the" "woman") ("a" "table" "took" "the" "woman") ("the" "man" "liked" "a" "man") ("a" "table" "hit" "a" "woman") ("a" "woman" "hit" "the" "woman") ("a" "man" "hit" "a" "table"))
+
     this evaluates to:
     #+begin_src clojure
     (("a" "ball" "liked" "the" "ball")
@@ -86,12 +95,12 @@
     (declare Adj)
     (defn Adj* []
       (if (= (rand-int 2) 0)
-        nile
+        nil
         (concat (Adj) (Adj*))))
     #+end_src
 
     #+RESULTS:
-     ;;=> #'user/Adj*
+==> #'user/Adj*
 
     There has to be a better way... enter the data-driven solution!
 ** A data-driven solution
@@ -145,7 +154,7 @@
     #+end_src
 
     #+RESULTS:
-    : ;;=> #'user/*grammar*
+    : => #'user/*grammar*
 
     Ok that's for the design part.
     Now that we have a good representation of our data, the grammar, we have to worry about evaluating it.
@@ -169,6 +178,9 @@
               (set? phrase)  (generate (rand-nth (seq phrase)))
               :else [phrase]))
     #+end_src
+    #+RESULTS:
+    : => #'user/generate
+
     Amazing how closely the code mimics the description.
     So this is data-dricen programming. Decouple the representation of the data from the code which evaluates it.
 
@@ -194,12 +206,12 @@
     #+end_src
 
     #+RESULTS:
-    : ;;=> #'user/*grammar*
+    : => #'user/*grammar*
 
     Let's generate 10 sentences again:
     #+begin_src clojure
     (take 10 (repeatedly #(generate :sentence)))
-    
+      
     (("these" "liked" "a" "ball")
      ("a" "ball" "in" "the" "big" "green" "big" "woman" "in" "that" "by" "Terry" "liked" "a" "man")
      ("that" "liked" "that")
@@ -226,7 +238,7 @@
     #+end_src
 
     #+RESULTS:
-    : ;;=> #'user/generate-all
+    : => #'user/generate-all
 
     there are only two changes: make a list of phrase and the generated symbols before recursing and return the
     phrase in the base call instead of a single item vector containing it.
@@ -266,5 +278,6 @@
    - use different datasets with the same evaluation function
    - use different evaluation functions with the same dataset
    - represent your problem so that it is easier to understand.
+
 
 Chapter 4 coming soon. It contains an implementation of the GPS, the General Problem Solver.

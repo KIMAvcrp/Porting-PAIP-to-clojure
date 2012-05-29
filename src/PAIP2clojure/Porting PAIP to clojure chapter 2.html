@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
                "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title>Porting PAIP to clojure chapter 2</title>
-<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1"/>
-<meta name="title" content="Porting PAIP to clojure chapter 2"/>
+<title>Porting PAIP to clojure chapter 2 </title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="Porting PAIP to clojure chapter 2 "/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-05-29T17:24+0200"/>
-<meta name="author" content="kima"/>
+<meta name="generated" content="2012-05-29T19:06+0200"/>
+<meta name="author" content="Maik Schünemann"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
 <style type="text/css">
@@ -59,7 +59,15 @@
   .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
                                  font-weight:bold; }
   /*]]>*/-->
-</style>
+</style><style type="text/css">pre {
+    border: 1pt solid #AEBDCC;
+	color:white;
+ background-color: #000000;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  } </style>
 <script type="text/javascript">
 <!--/*--><![CDATA[/*><!--*/
  function CodeHighlightOn(elem, id)
@@ -91,8 +99,10 @@
 </div>
 
 <div id="content">
-<h1 class="title">Porting PAIP to clojure chapter 2</h1>
+<h1 class="title">Porting PAIP to clojure chapter 2 </h1>
 
+
+<hr/>
 
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
@@ -176,7 +186,7 @@
 </p>
 
 
-<pre class="example">(defun sentence ()    (append (noun-phrase) (verb-phrase)))
+<pre class="src src-common">(defun sentence ()    (append (noun-phrase) (verb-phrase)))
 (defun noun-phrase () (append (Article) (Noun)))
 (defun verb-phrase () (append (Verb) (noun-phrase)))
 (defun Article ()     (one-of '(the a)))
@@ -190,14 +200,19 @@
 </p>
 
 
-<pre class="example">(declare sentence noun-phrase verb-phrase article noun verb one-of)
+<pre class="src src-clojure">(<span style="color: #eedd82;">declare</span> sentence noun-phrase verb-phrase article noun verb one-of)
 
-(defn  sentence [] (concat (noun-phrase) (verb-phrase)))
-(defn  noun-phrase [] (concat (article) (noun)))
-(defn  verb-phrase [] (concat (verb) (noun-phrase)))
-(defn  article [] (one-of ["the" "a"]))
-(defn  noun [] (one-of ["man" "ball" "woman" "table"]))
-(defn  verb [] (one-of ["hit" "took" "saw" "liked"]))
+(<span style="color: #00ffff;">defn</span>  <span style="color: #87cefa;">sentence</span> [] (<span style="color: #eedd82;">concat</span> (noun-phrase) (verb-phrase)))
+(<span style="color: #00ffff;">defn</span>  <span style="color: #87cefa;">noun-phrase</span> [] (<span style="color: #eedd82;">concat</span> (article) (noun)))
+(<span style="color: #00ffff;">defn</span>  <span style="color: #87cefa;">verb-phrase</span> [] (<span style="color: #eedd82;">concat</span> (verb) (noun-phrase)))
+(<span style="color: #00ffff;">defn</span>  <span style="color: #87cefa;">article</span> [] (one-of [<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"a"</span>]))
+(<span style="color: #00ffff;">defn</span>  <span style="color: #87cefa;">noun</span> [] (one-of [<span style="color: #ffa07a;">"man"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"table"</span>]))
+(<span style="color: #00ffff;">defn</span>  <span style="color: #87cefa;">verb</span> [] (one-of [<span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"saw"</span> <span style="color: #ffa07a;">"liked"</span>]))
+</pre>
+
+
+<pre class="example">
+=&gt; #'user/verb
 </pre>
 
 
@@ -207,8 +222,8 @@
 </p>
 
 
-<pre class="example">(defn one-of [coll]
-  (if (seq coll)
+<pre class="src src-clojure">(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">one-of</span> [coll]
+  (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">seq</span> coll)
    [(rand-nth coll)]))
 </pre>
 
@@ -218,24 +233,25 @@
 </p>
     
 
-<pre class="example">(take 10 (repeatedly sentence))   
+<pre class="src src-clojure">(<span style="color: #eedd82;">take</span> 10 (<span style="color: #eedd82;">repeatedly</span> sentence))   
 </pre>
+
 
 <p>
     this evaluates to:
 </p>
 
 
-<pre class="example">(("a" "ball" "liked" "the" "ball")
-("the" "table" "took" "the" "ball")
-("the" "man" "took" "a" "man")
-("the" "woman" "saw" "a" "man")
-("a" "ball" "hit" "the" "ball")
-("a" "table" "hit" "the" "man")
-("a" "ball" "took" "a" "ball")
-("a" "man" "liked" "a" "ball")
-("a" "table" "saw" "the" "ball")
-("the" "woman" "hit" "a" "ball"))
+<pre class="src src-clojure">((<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"ball"</span>)
+(<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"table"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"ball"</span>)
+(<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"man"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"man"</span>)
+(<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"saw"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"man"</span>)
+(<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"ball"</span>)
+(<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"table"</span> <span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"man"</span>)
+(<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span>)
+(<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"man"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span>)
+(<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"table"</span> <span style="color: #ffa07a;">"saw"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"ball"</span>)
+(<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span>))
 </pre>
 
 <p>
@@ -248,15 +264,15 @@
 </p>
 
 
-<pre class="example">(declare Adj)
-(defn Adj* []
-  (if (= (rand-int 2) 0)
-    nile
-    (concat (Adj) (Adj*))))
+<pre class="src src-clojure">(<span style="color: #eedd82;">declare</span> <span style="color: #b0c4de;">Adj</span>)
+(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">Adj*</span> []
+  (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">=</span> (<span style="color: #eedd82;">rand-int</span> 2) 0)
+    nil
+    (<span style="color: #eedd82;">concat</span> (<span style="color: #b0c4de;">Adj</span>) (Adj*))))
 </pre>
 
 <p>
-     ;;=&gt; #'user/Adj*
+==&gt; #'user/Adj*
 </p>
 <p>
     There has to be a better way&hellip; enter the data-driven solution!
@@ -285,14 +301,14 @@
 </p>
 
 
-<pre class="example"> (defparameter *simple-grammar*
+<pre class="src src-common"> (defparameter *simple-grammar*
  '((sentence -&gt; (noun-phrase verb-phrase))
   (noun-phrase -&gt; (Article Noun))
   (verb-phrase -&gt; (Verb noun-phrase))
   (Article -&gt; the a)
   (Noun -&gt; man ball woman table)
    (Verb -&gt; hit took saw liked))
-"A grammar for a trivial subset of English.")
+<span style="color: #ffa07a;">"A grammar for a trivial subset of English."</span>)
 </pre>
 
 <p>
@@ -321,15 +337,15 @@
 </p>
 
 
-<pre class="example">(def simple-grammar
-{:sentence [:noun-phrase :verb-phrase]
- :noun-phrase [:Article :Noun]
- :verb-phrase [:Verb :noun-phrase]
- :Article #{"the" "a"}
- :Noun #{"man" "ball" "woman" "table"}
- :Verb #{"hit" "took" "saw" "liked"}})
+<pre class="src src-clojure">(<span style="color: #00ffff;">def</span> <span style="color: #87cefa;">simple-grammar</span>
+{<span style="color: #7fffd4;">:sentence</span> [<span style="color: #7fffd4;">:noun-phrase</span> <span style="color: #7fffd4;">:verb-phrase</span>]
+ <span style="color: #7fffd4;">:noun-phrase</span> [<span style="color: #7fffd4;">:Article</span> <span style="color: #7fffd4;">:Noun</span>]
+ <span style="color: #7fffd4;">:verb-phrase</span> [<span style="color: #7fffd4;">:Verb</span> <span style="color: #7fffd4;">:noun-phrase</span>]
+ <span style="color: #7fffd4;">:Article</span> #{<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"a"</span>}
+ <span style="color: #7fffd4;">:Noun</span> #{<span style="color: #ffa07a;">"man"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"table"</span>}
+ <span style="color: #7fffd4;">:Verb</span> #{<span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"saw"</span> <span style="color: #ffa07a;">"liked"</span>}})
 
-(def ^:dynamic *grammar* simple-grammar)
+(<span style="color: #00ffff;">def</span> <span style="color: #7fffd4;">^:dynamic</span> <span style="color: #87cefa;">*grammar*</span> simple-grammar)
 </pre>
 
 
@@ -360,11 +376,11 @@
 </p>
 
 
-<pre class="example">(defn generate [phrase]
-    (cond (get *grammar* phrase) (generate (get *grammar* phrase))
-          (sequential? phrase) (mapcat generate phrase)
-          (set? phrase)  (generate (rand-nth (seq phrase)))
-          :else [phrase]))
+<pre class="src src-clojure">(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">generate</span> [phrase]
+    (<span style="color: #b0c4de;">cond</span> (<span style="color: #eedd82;">get</span> *grammar* phrase) (generate (<span style="color: #eedd82;">get</span> *grammar* phrase))
+          (<span style="color: #eedd82;">sequential?</span> phrase) (<span style="color: #eedd82;">mapcat</span> generate phrase)
+          (<span style="color: #eedd82;">set?</span> phrase)  (generate (rand-nth (<span style="color: #eedd82;">seq</span> phrase)))
+          <span style="color: #7fffd4;">:else</span> [phrase]))
 </pre>
 
 <p>
@@ -377,22 +393,22 @@
 </p>
 
 
-<pre class="example">(def bigger-grammar
- {:sentence [:noun-phrase :verb-phrase]
-  :noun-phrase #{[:Article :Adj* :Noun :PP*] :Name :Pronoun}
-  :verb-phrase [:Verb :noun-phrase :PP*]
-  :PP* #{[] [:PP :PP*]}
-  :Adj* #{[] [:Adj :Adj*]}
-  :PP [:Prep :noun-phrase]
-  :Prep #{"to" "in" "by" "with" "on"}
-  :Adj #{"big" "little" "blue" "green" "adiabatic"}
-  :Article #{"the" "a"}
-  :Name #{"Pat" "Kim" "Lee" "Terry" "Robin"}
-  :Noun #{"man" "ball" "woman" "table"}
-  :Verb #{"hit" "took" "saw" "liked"}
-  :Pronoun #{"he" "she" "it" "these" "those" "that"}
+<pre class="src src-clojure">(<span style="color: #00ffff;">def</span> <span style="color: #87cefa;">bigger-grammar</span>
+ {<span style="color: #7fffd4;">:sentence</span> [<span style="color: #7fffd4;">:noun-phrase</span> <span style="color: #7fffd4;">:verb-phrase</span>]
+  <span style="color: #7fffd4;">:noun-phrase</span> #{[<span style="color: #7fffd4;">:Article</span> <span style="color: #7fffd4;">:Adj*</span> <span style="color: #7fffd4;">:Noun</span> <span style="color: #7fffd4;">:PP*</span>] <span style="color: #7fffd4;">:Name</span> <span style="color: #7fffd4;">:Pronoun</span>}
+  <span style="color: #7fffd4;">:verb-phrase</span> [<span style="color: #7fffd4;">:Verb</span> <span style="color: #7fffd4;">:noun-phrase</span> <span style="color: #7fffd4;">:PP*</span>]
+  <span style="color: #7fffd4;">:PP*</span> #{[] [<span style="color: #7fffd4;">:PP</span> <span style="color: #7fffd4;">:PP*</span>]}
+  <span style="color: #7fffd4;">:Adj*</span> #{[] [<span style="color: #7fffd4;">:Adj</span> <span style="color: #7fffd4;">:Adj*</span>]}
+  <span style="color: #7fffd4;">:PP</span> [<span style="color: #7fffd4;">:Prep</span> <span style="color: #7fffd4;">:noun-phrase</span>]
+  <span style="color: #7fffd4;">:Prep</span> #{<span style="color: #ffa07a;">"to"</span> <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"by"</span> <span style="color: #ffa07a;">"with"</span> <span style="color: #ffa07a;">"on"</span>}
+  <span style="color: #7fffd4;">:Adj</span> #{<span style="color: #ffa07a;">"big"</span> <span style="color: #ffa07a;">"little"</span> <span style="color: #ffa07a;">"blue"</span> <span style="color: #ffa07a;">"green"</span> <span style="color: #ffa07a;">"adiabatic"</span>}
+  <span style="color: #7fffd4;">:Article</span> #{<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"a"</span>}
+  <span style="color: #7fffd4;">:Name</span> #{<span style="color: #ffa07a;">"Pat"</span> <span style="color: #ffa07a;">"Kim"</span> <span style="color: #ffa07a;">"Lee"</span> <span style="color: #ffa07a;">"Terry"</span> <span style="color: #ffa07a;">"Robin"</span>}
+  <span style="color: #7fffd4;">:Noun</span> #{<span style="color: #ffa07a;">"man"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"table"</span>}
+  <span style="color: #7fffd4;">:Verb</span> #{<span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"saw"</span> <span style="color: #ffa07a;">"liked"</span>}
+  <span style="color: #7fffd4;">:Pronoun</span> #{<span style="color: #ffa07a;">"he"</span> <span style="color: #ffa07a;">"she"</span> <span style="color: #ffa07a;">"it"</span> <span style="color: #ffa07a;">"these"</span> <span style="color: #ffa07a;">"those"</span> <span style="color: #ffa07a;">"that"</span>}
  })
-(def ^:dynamic *grammar* bigger-grammar)
+(<span style="color: #00ffff;">def</span> <span style="color: #7fffd4;">^:dynamic</span> <span style="color: #87cefa;">*grammar*</span> bigger-grammar)
 </pre>
 
 
@@ -401,20 +417,20 @@
 </p>
 
 
-<pre class="example">(take 10 (repeatedly #(generate :sentence)))
+<pre class="src src-clojure">(<span style="color: #eedd82;">take</span> 10 (<span style="color: #eedd82;">repeatedly</span> #(generate <span style="color: #7fffd4;">:sentence</span>)))
 
-(("these" "liked" "a" "ball")
- ("a" "ball" "in" "the" "big" "green" "big" "woman" "in" "that" "by" "Terry" "liked" "a" "man")
- ("that" "liked" "that")
- ("Lee" "hit" "it")
- ("Lee" "took" "Lee")
- ("the" "little" "blue" "little" "ball" "in" "Terry" "by" "Robin" "liked" "Pat")
- ("a" "adiabatic" "blue" "blue" "ball" "saw" "the" "man" "in" "Pat" "by" "Lee" "on" "a" "adiabatic" "table"
-  "in" "Terry")
- ("Pat" "hit" "Robin" "to" "those")
- ("those" "liked" "the" "woman" "with" "Robin" "with" "these" "in" "the" "table" "to" "Robin" "to" "a"
-  "blue" "adiabatic" "ball" "with" "she" "on" "those" "on" "those")
- ("it" "hit" "Kim" "on" "she" "on" "the" "table"))
+((<span style="color: #ffa07a;">"these"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span>)
+ (<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"big"</span> <span style="color: #ffa07a;">"green"</span> <span style="color: #ffa07a;">"big"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"that"</span> <span style="color: #ffa07a;">"by"</span> <span style="color: #ffa07a;">"Terry"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"man"</span>)
+ (<span style="color: #ffa07a;">"that"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"that"</span>)
+ (<span style="color: #ffa07a;">"Lee"</span> <span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"it"</span>)
+ (<span style="color: #ffa07a;">"Lee"</span> <span style="color: #ffa07a;">"took"</span> <span style="color: #ffa07a;">"Lee"</span>)
+ (<span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"little"</span> <span style="color: #ffa07a;">"blue"</span> <span style="color: #ffa07a;">"little"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"Terry"</span> <span style="color: #ffa07a;">"by"</span> <span style="color: #ffa07a;">"Robin"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"Pat"</span>)
+ (<span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"adiabatic"</span> <span style="color: #ffa07a;">"blue"</span> <span style="color: #ffa07a;">"blue"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"saw"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"man"</span> <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"Pat"</span> <span style="color: #ffa07a;">"by"</span> <span style="color: #ffa07a;">"Lee"</span> <span style="color: #ffa07a;">"on"</span> <span style="color: #ffa07a;">"a"</span> <span style="color: #ffa07a;">"adiabatic"</span> <span style="color: #ffa07a;">"table"</span>
+  <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"Terry"</span>)
+ (<span style="color: #ffa07a;">"Pat"</span> <span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"Robin"</span> <span style="color: #ffa07a;">"to"</span> <span style="color: #ffa07a;">"those"</span>)
+ (<span style="color: #ffa07a;">"those"</span> <span style="color: #ffa07a;">"liked"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"woman"</span> <span style="color: #ffa07a;">"with"</span> <span style="color: #ffa07a;">"Robin"</span> <span style="color: #ffa07a;">"with"</span> <span style="color: #ffa07a;">"these"</span> <span style="color: #ffa07a;">"in"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"table"</span> <span style="color: #ffa07a;">"to"</span> <span style="color: #ffa07a;">"Robin"</span> <span style="color: #ffa07a;">"to"</span> <span style="color: #ffa07a;">"a"</span>
+  <span style="color: #ffa07a;">"blue"</span> <span style="color: #ffa07a;">"adiabatic"</span> <span style="color: #ffa07a;">"ball"</span> <span style="color: #ffa07a;">"with"</span> <span style="color: #ffa07a;">"she"</span> <span style="color: #ffa07a;">"on"</span> <span style="color: #ffa07a;">"those"</span> <span style="color: #ffa07a;">"on"</span> <span style="color: #ffa07a;">"those"</span>)
+ (<span style="color: #ffa07a;">"it"</span> <span style="color: #ffa07a;">"hit"</span> <span style="color: #ffa07a;">"Kim"</span> <span style="color: #ffa07a;">"on"</span> <span style="color: #ffa07a;">"she"</span> <span style="color: #ffa07a;">"on"</span> <span style="color: #ffa07a;">"the"</span> <span style="color: #ffa07a;">"table"</span>))
 </pre>
 
 <p>
@@ -425,16 +441,16 @@
 </p>
 
 
-<pre class="example">(defn generate-all [phrase]
-    (cond (get *grammar* phrase)  (list phrase (generate-all (get *grammar* phrase)))
-          (sequential? phrase) (mapcat generate-all phrase)
-          (set? phrase)  (generate-all (rand-nth (seq phrase)))
-          :else phrase))
+<pre class="src src-clojure">(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">generate-all</span> [phrase]
+    (<span style="color: #b0c4de;">cond</span> (<span style="color: #eedd82;">get</span> *grammar* phrase)  (<span style="color: #eedd82;">list</span> phrase (generate-all (<span style="color: #eedd82;">get</span> *grammar* phrase)))
+          (<span style="color: #eedd82;">sequential?</span> phrase) (<span style="color: #eedd82;">mapcat</span> generate-all phrase)
+          (<span style="color: #eedd82;">set?</span> phrase)  (generate-all (rand-nth (<span style="color: #eedd82;">seq</span> phrase)))
+          <span style="color: #7fffd4;">:else</span> phrase))
 </pre>
 
 
 <pre class="example">
-;;=&gt; #'user/generate-all
+=&gt; #'user/generate-all
 </pre>
 
 
@@ -445,21 +461,21 @@
 </p>
 
 
-<pre class="example">(generate-all :sentence)
-;=&gt;
-    (:sentence 
-      (:noun-phrase 
-         (:Name "Kim")
-       :verb-phrase 
-         (:Verb "saw"
-          :noun-phrase 
-            (:Article "the"
-             :Adj* 
-               (:Adj "adiabatic" 
-                :Adj* ())
-             :Noun "ball" 
-             :PP* ())
-          :PP* ())))
+<pre class="src src-clojure">(generate-all <span style="color: #7fffd4;">:sentence</span>)
+<span style="color: #ff7f24;">;</span><span style="color: #ff7f24;">=&gt;</span>
+    (<span style="color: #7fffd4;">:sentence</span> 
+      (<span style="color: #7fffd4;">:noun-phrase</span> 
+         (<span style="color: #7fffd4;">:Name</span> <span style="color: #ffa07a;">"Kim"</span>)
+       <span style="color: #7fffd4;">:verb-phrase</span> 
+         (<span style="color: #7fffd4;">:Verb</span> <span style="color: #ffa07a;">"saw"</span>
+          <span style="color: #7fffd4;">:noun-phrase</span> 
+            (<span style="color: #7fffd4;">:Article</span> <span style="color: #ffa07a;">"the"</span>
+             <span style="color: #7fffd4;">:Adj*</span> 
+               (<span style="color: #7fffd4;">:Adj</span> <span style="color: #ffa07a;">"adiabatic"</span> 
+                <span style="color: #7fffd4;">:Adj*</span> ())
+             <span style="color: #7fffd4;">:Noun</span> <span style="color: #ffa07a;">"ball"</span> 
+             <span style="color: #7fffd4;">:PP*</span> ())
+          <span style="color: #7fffd4;">:PP*</span> ())))
 </pre>
 
 
@@ -506,8 +522,8 @@ Chapter 4 coming soon. It contains an implementation of the GPS, the General Pro
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2012-05-29T17:24+0200</p>
-<p class="author">Author: kima</p>
+<p class="date">Date: 2012-05-29T19:06+0200</p>
+<p class="author">Author: Maik Schünemann</p>
 <p class="creator">Org version 7.8.09 with Emacs version 23</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
 

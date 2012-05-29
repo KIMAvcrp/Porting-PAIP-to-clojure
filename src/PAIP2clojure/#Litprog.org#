@@ -1,0 +1,13 @@
+#+TITLE:Literate Programming in Clojure 
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+BABEL: :results output :exports both :tangle yes
+#+STARTUP:showall
+-----
+* Literate programming in clojure using org-mode babel
+  In my previous post ...
+
+
+  #+begin_src clojure
+  
+  #+end_src
