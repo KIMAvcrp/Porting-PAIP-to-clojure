@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Porting PAIP to clojure chapter 2</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="Porting PAIP to clojure chapter 2"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2012-05-28T18:12+0200"/>
+<meta name="author" content="kima"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">Porting PAIP to clojure chapter 2</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Porting PAIP to clojure - chapter 2 A Simple Lisp Program or use the best notation available to solve you problem</a>
+<ul>
+<li><a href="#sec-1-1">1.1 Introduction</a></li>
+<li><a href="#sec-1-2">1.2 Generating random Sentences</a>
+<ul>
+<li><a href="#sec-1-2-1">1.2.1 The Grammar</a></li>
+<li><a href="#sec-1-2-2">1.2.2 The Program</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-3">1.3 A data-driven solution</a>
+<ul>
+<li><a href="#sec-1-3-1">1.3.1 The representation of the grammar</a></li>
+<li><a href="#sec-1-3-2">1.3.2 Evaluating the grammar</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-4">1.4 Advantages of the data-driven solution</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Porting PAIP to clojure - chapter 2 A Simple Lisp Program or use the best notation available to solve you problem</h2>
+<div class="outline-text-2" id="text-1">
+
+
+</div>
+
+<div id="outline-container-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Introduction</h3>
+<div class="outline-text-3" id="text-1-1">
+
+<p>   This is the first post of my series porting PAIP to clojure.
+   It is possible to follow my post even if you don't PAIP but I strongly recommend that you get a copy
+   of it.
+   This chapter contains a program to generate random sentences using a grammar for a subset of english.
+   Norvig presents two versions of the program, a straightforward solution using functions to generate random 
+   sentences from a grammar
+   Then the weaknesses of this approach are shown and a better solution is developed using a data-driven solution.
+   Afterwards, the advantages of the data-driven approach are discussed.
+</p></div>
+
+</div>
+
+<div id="outline-container-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Generating random Sentences</h3>
+<div class="outline-text-3" id="text-1-2">
+
+
+</div>
+
+<div id="outline-container-1-2-1" class="outline-4">
+<h4 id="sec-1-2-1"><span class="section-number-4">1.2.1</span> The Grammar</h4>
+<div class="outline-text-4" id="text-1-2-1">
+
+<p>     Sentence =&gt; Noun-Phrase + Verb-Phrase
+     Noun-Phrase =&gt; Article + Noun
+     &hellip;
+     Article =&gt; the, a, &hellip;.
+     &hellip;
+     A rule consists either of two or more non-terminals like Noun-phrase or of a collection of
+     terminals like the, a,&hellip;
+     This representation is very natural if you have ever worked with context-free grammars before.
+     The rule Article =&gt; the, a, &hellip;  means: An article is either the or a or &hellip; (Article = the | a | &hellip;)
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-1-2-2" class="outline-4">
+<h4 id="sec-1-2-2"><span class="section-number-4">1.2.2</span> The Program</h4>
+<div class="outline-text-4" id="text-1-2-2">
+
+<p>    That is the Common Lisp code for the naive solution. It can be found <a href="http://norvig.com/paip/README.html">here</a>.
+</p>
+
+
+<pre class="example">(defun sentence ()    (append (noun-phrase) (verb-phrase)))
+(defun noun-phrase () (append (Article) (Noun)))
+(defun verb-phrase () (append (Verb) (noun-phrase)))
+(defun Article ()     (one-of '(the a)))
+(defun Noun ()        (one-of '(man ball woman table)))
+(defun Verb ()        (one-of '(hit took saw liked)))
+</pre>
+
+<p>
+    The translation to clojure is straightforward. But I will use a slightly modified version which is, as I think,
+    a little bot more ideomatic in clojure:
+</p>
+
+
+<pre class="example">(declare sentence noun-phrase verb-phrase article noun verb one-of)
+
+(defn  sentence [] (concat (noun-phrase) (verb-phrase)))
+(defn  noun-phrase [] (concat (article) (noun)))
+(defn  verb-phrase [] (concat (verb) (noun-phrase)))
+(defn  article [] (one-of ["the" "a"]))
+(defn  noun [] (one-of ["man" "ball" "woman" "table"]))
+(defn  verb [] (one-of ["hit" "took" "saw" "liked"]))
+</pre>
+
+<p>
+    I use vectors instead of lists and strings instead of symbols. here are the helper-functions:
+    one-of picks one element of the collection and returns a single-element collection containing it.
+</p>
+
+
+<pre class="example">(defn one-of [coll]
+  (if (seq coll)
+   [(rand-nth coll)]))
+</pre>
+
+<p>
+    To test, let's get 10 random sentences:
+</p>
+
+
+<pre class="example">(take 10 (repeatedly sentence))   
+</pre>
+
+<p>
+    this evaluates to:
+</p>
+
+
+<pre class="example">(("a" "ball" "liked" "the" "ball")
+("the" "table" "took" "the" "ball")
+("the" "man" "took" "a" "man")
+("the" "woman" "saw" "a" "man")
+("a" "ball" "hit" "the" "ball")
+("a" "table" "hit" "the" "man")
+("a" "ball" "took" "a" "ball")
+("a" "man" "liked" "a" "ball")
+("a" "table" "saw" "the" "ball")
+("the" "woman" "hit" "a" "ball"))
+</pre>
+
+<p>
+    I believe it is apparent that this is not a good representation for a grammar. The lisp functions are definitly
+    harder to read than the normal grammar syntax shown above.
+    As an example, if you wanted to represent the following rule:
+    Adj* =&gt; e,Adj + Adj*
+    (note that e is the empty symbol)
+    you would have to write a function like this:
+</p>
+
+
+<pre class="example">(declare Adj)
+(defn Adj* []
+  (if (= (rand-int 2) 0)
+    nil
+    (concat (Adj) (Adj*))))
+</pre>
+
+<p>
+    There has to be a better way&hellip; enter the data-driven solution!
+</p></div>
+</div>
+
+</div>
+
+<div id="outline-container-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> A data-driven solution</h3>
+<div class="outline-text-3" id="text-1-3">
+
+<p>   The naive solution is straightforward to implement while making it harder to encode the grammar rules.
+   By using a data-driven approach, it is the other war round. Writing grammar rules becomes easy
+   while implementation may become harder. 
+   So let's take a look how the data-driven solution works for this problem.
+</p>
+</div>
+
+<div id="outline-container-1-3-1" class="outline-4">
+<h4 id="sec-1-3-1"><span class="section-number-4">1.3.1</span> The representation of the grammar</h4>
+<div class="outline-text-4" id="text-1-3-1">
+
+<p>    The first step is to decouple the grammar from the code which processes it.
+    In the book Norvig represents the grammar with the following datastructure:
+</p>
+
+
+<pre class="example"> (defparameter *simple-grammar*
+ '((sentence -&gt; (noun-phrase verb-phrase))
+  (noun-phrase -&gt; (Article Noun))
+  (verb-phrase -&gt; (Verb noun-phrase))
+  (Article -&gt; the a)
+  (Noun -&gt; man ball woman table)
+   (Verb -&gt; hit took saw liked))
+"A grammar for a trivial subset of English.")
+</pre>
+
+<p>
+    Here the grammar rule sentence =&gt; noun-phrase + verb<sub>phrase</sub> gets translated to
+    (sentence -&gt; (noun-phrase verb-phrase)).
+    So a list of elements means "produce this nonterminals in sequence". Multiple nonterminals
+    right of the -&gt; sign mean  "choose one of this nonterminals". 
+    Every rule is itself a list and the grammar is a list of rules.
+</p>
+<p>
+    But this representation is not really clojureish?.
+    We can take advantage of clojures literal representation for maps,vectors and sets in addition to lists.
+    Using these, the meaning of a datastructure- when choosen appropriate- becomes clearer.
+    Let me give you an example:
+    What are grammar rules? Rules map a nonterminal to - posible multiple - nonterminals or terminals.
+    Thus it is appropriate to represent them as a map in clojure.
+    I choose to represent the nonterminals as keywords and the values of the map as
+    either one element or a vector of multiple elements.
+    A vector means: "apply all elements in order".
+</p>
+<p>
+    Norvig represents a choice of nonterminals as simply the nonterminals written after the -&gt; sign.
+    For me, it was not clear at the beginning that that means "choose one of these nonterminals".
+    Using a set in clojure, this becomes obvious.
+    Rewritten, the grammar becomes the following:
+</p>
+
+
+<pre class="example">(def simple-grammar
+{:sentence [:noun-phrase :verb-phrase]
+ :noun-phrase [:Article :Noun]
+ :verb-phrase [:Verb :noun-phrase]
+ :Article #{"the" "a"}
+ :Noun #{"man" "ball" "woman" "table"}
+ :Verb #{"hit" "took" "saw" "liked"}})
+
+(def ^:dynamic *grammar* simple-grammar)
+</pre>
+
+<p>
+    Ok that's for the design part.
+    Now that we have a good representation of our data, the grammar, we have to worry about evaluating it.
+</p></div>
+
+</div>
+
+<div id="outline-container-1-3-2" class="outline-4">
+<h4 id="sec-1-3-2"><span class="section-number-4">1.3.2</span> Evaluating the grammar</h4>
+<div class="outline-text-4" id="text-1-3-2">
+
+<p>    Because I have chosen a different and more ideomatic representation of the grammar in clojure, the code for
+    evaluating the grammar will be different than the code in PAIP. So don't expect a literal translation of the
+    PAIP code.
+</p>
+<p>     
+    So, how can we generate a possible sentence: 
+    the function 'generate' will take the startsymbol as argument and retrieves the rule from the grammar.
+    If there is not a rule for the argument in the grammar, the argument itself is evaluated (thus making it
+    possible to call generate either with the left hand or the right hand side of a rule).
+    It will recurse on the elements of the rule in sequence, appending the result as it goes along.
+    When it encounters a set, it will generate one random element of it.
+    it recursively generates the nonterminal. If it encounters a terminal, that is none of the above are true,
+    it just returns a single-element vector of it.
+</p>
+
+
+<pre class="example">(defn generate [phrase]
+    (cond (get *grammar* phrase) (generate (get *grammar* phrase))
+          (sequential? phrase) (mapcat generate phrase)
+          (set? phrase)  (generate (rand-nth (seq phrase)))
+          :else [phrase]))
+</pre>
+
+<p>
+    Amazing how closely the code mimics the description.
+    So this is data-dricen programming. Decouple the representation of the data from the code which evaluates it.
+</p>
+<p>
+    Let's take a look at a more complicated example and see how the
+    data-driven approach scales. Here's the bigger grammar:
+</p>
+
+
+<pre class="example">(def bigger-grammar
+ {:sentence [:noun-phrase :verb-phrase]
+  :noun-phrase #{[:Article :Adj* :Noun :PP*] :Name :Pronoun}
+  :verb-phrase [:Verb :noun-phrase :PP*]
+  :PP* #{[] [:PP :PP*]}
+  :Adj* #{[] [:Adj :Adj*]}
+  :PP [:Prep :noun-phrase]
+  :Prep #{"to" "in" "by" "with" "on"}
+  :Adj #{"big" "little" "blue" "green" "adiabatic"}
+  :Article #{"the" "a"}
+  :Name #{"Pat" "Kim" "Lee" "Terry" "Robin"}
+  :Noun #{"man" "ball" "woman" "table"}
+  :Verb #{"hit" "took" "saw" "liked"}
+  :Pronoun #{"he" "she" "it" "these" "those" "that"}
+ })
+(def ^:dynamic *grammar* bigger-grammar)
+</pre>
+
+<p>
+    Let's generate 10 sentences again:
+</p>
+
+
+<pre class="example">(take 10 (repeatedly #(generate :sentence)))
+
+(("these" "liked" "a" "ball")
+ ("a" "ball" "in" "the" "big" "green" "big" "woman" "in" "that" "by" "Terry" "liked" "a" "man")
+ ("that" "liked" "that")
+ ("Lee" "hit" "it")
+ ("Lee" "took" "Lee")
+ ("the" "little" "blue" "little" "ball" "in" "Terry" "by" "Robin" "liked" "Pat")
+ ("a" "adiabatic" "blue" "blue" "ball" "saw" "the" "man" "in" "Pat" "by" "Lee" "on" "a" "adiabatic" "table"
+  "in" "Terry")
+ ("Pat" "hit" "Robin" "to" "those")
+ ("those" "liked" "the" "woman" "with" "Robin" "with" "these" "in" "the" "table" "to" "Robin" "to" "a"
+  "blue" "adiabatic" "ball" "with" "she" "on" "those" "on" "those")
+ ("it" "hit" "Kim" "on" "she" "on" "the" "table"))
+</pre>
+
+<p>
+    It works! Enjoy the funny sentences.
+    But hey, what if we wanted to see how the sentences are generated, to see the parse-tree.
+    Because of the data-driven design, it is easy to implement this. The data doesn't need to be changed, we need
+    only a new evaluation-function. 
+</p>
+
+
+<pre class="example">(defn generate-all [phrase]
+    (cond (get *grammar* phrase)  (list phrase (generate-all (get *grammar* phrase)))
+          (sequential? phrase) (mapcat generate-all phrase)
+          (set? phrase)  (generate-all (rand-nth (seq phrase)))
+          :else phrase))
+</pre>
+
+<p>
+    there are only two changes: make a list of phrase and the generated symbols before recursing and return the
+    phrase in the base call instead of a single item vector containing it.
+    Imaging changing all functions to achieve this instead of just two lines &hellip;
+</p>
+
+
+<pre class="example">(generate-all :sentence)
+;=&gt;
+    (:sentence 
+      (:noun-phrase 
+         (:Name "Kim")
+       :verb-phrase 
+         (:Verb "saw"
+          :noun-phrase 
+            (:Article "the"
+             :Adj* 
+               (:Adj "adiabatic" 
+                :Adj* ())
+             :Noun "ball" 
+             :PP* ())
+          :PP* ())))
+</pre>
+
+
+<p>    
+   Norvig gives a last example of a generate-all function, which works on the simple grammar and returns all
+   possible sentences defined by the grammar (the language of the grammar).
+   I leaf the implementation to the reader :)
+</p>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Advantages of the data-driven solution</h3>
+<div class="outline-text-3" id="text-1-4">
+
+
+<p> 
+   Gratulations for making it through the post.
+   With this chapter, Norvig makes a strong point which will be even more important in the next chapters
+   (and is for programming in general).
+   If you use the data-driven approach, you use "the most natural notation available to solve the problem".
+   So instead of worrying how to implement the problem, worry about how to represent you data, so that it is easy
+   to understand and to scale it.
+   With the data-driven solution, you can
+</p><ul>
+<li>expand and modify the program easier
+</li>
+<li>use different datasets with the same evaluation function
+</li>
+<li>use different evaluation functions with the same dataset
+</li>
+<li>represent your problem so that it is easier to understand.
+</li>
+</ul>
+
+
+<p>
+Chapter 4 coming soon. It contains an implementation of the GPS, the General Problem Solver.
+</p></div>
+</div>
+</div>
+</div>
+
+<div id="postamble">
+<p class="date">Date: 2012-05-28T18:12+0200</p>
+<p class="author">Author: kima</p>
+<p class="creator">Org version 7.8.09 with Emacs version 23</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>

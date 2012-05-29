@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>setting up org-mode babel with clojure</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="setting up org-mode babel with clojure"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2012-05-27T23:06+0200"/>
+<meta name="author" content="kima"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">setting up org-mode babel with clojure</h1>
+
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Setting up org-mode babel with clojure</a>
+<ul>
+<li><a href="#sec-1-1">1.1 Setting up babel to work with clojure</a>
+<ul>
+<li><a href="#sec-1-1-1">1.1.1 A partial Solution</a></li>
+<li><a href="#sec-1-1-2">1.1.2 Missing features</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-2">1.2 Final thoughts</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Setting up org-mode babel with clojure</h2>
+<div class="outline-text-2" id="text-1">
+
+<p>  For my new series 'Porting PAIP to clojure' I plan to write my blogposts as literate programming files
+  using emacs org-mode with babel set up for clojure. This file can be exportet to html using org-publish-as-html
+  and posted on my blog.
+  I was glad to notice that clojure is <a href="http://orgmode.org/worg/org-contrib/babel/languages.html">one of the supported languages</a> of babel
+</p>
+</div>
+
+<div id="outline-container-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Setting up babel to work with clojure</h3>
+<div class="outline-text-3" id="text-1-1">
+
+<p>   There is a <a href="http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-clojure.html">Instruction page</a> for setting up Org-babel-clojure.
+   However, It is outdated (It <a href="http://lists.gnu.org/archive/html/emacs-orgmode/2012-01/msg00507.html">depends on the deprecated swank-clojure</a> and doesn't work with the normal
+   clojure + emacs setup described <a href="http://dev.clojure.org/display/doc/Getting+Started+with+Emacs">here</a>.
+</p>
+</div>
+
+<div id="outline-container-1-1-1" class="outline-4">
+<h4 id="sec-1-1-1"><span class="section-number-4">1.1.1</span> A partial Solution</h4>
+<div class="outline-text-4" id="text-1-1-1">
+
+<p>    After googling a bit I found out that you seem to need <a href="http://nakkaya.com/2010/12/12/using-clojure-with-org-babel-and-inferior-lisp/">this code</a> to set it up:
+</p>
+
+
+<pre class="example">(require 'ob)
+
+(add-to-list 'org-babel-tangle-lang-exts '("clojure" . "clj"))
+
+(defvar org-babel-default-header-args:clojure 
+'((:results . "silent") (:tangle . "yes")))
+
+(defun org-babel-execute:clojure (body params)
+"Evaluate a block of Clojure code with Babel."
+(lisp-eval-string body)
+"Done!")
+
+(provide 'ob-clojure)
+</pre>
+
+
+<p>
+    There is only one problem: It doesn't work with a clojure-slime session started.
+    It gives a  Symbol's function definition is void: lisp-eval-string Error.
+    This seemed very strange to me because apparently no one but me had this error.
+    I spend a bit time searching where the function (lisp-eval-string) is defined. 
+    The solution (which seems now very naturally to me but costed my half an hour to find out) is that you have
+    to use clojure with Inferior-lisp instead of slime.
+    So add the following line to your .emacs
+</p>
+
+
+<pre class="example">(setq inferior-lisp-program "lein repl")
+</pre>
+
+<p>
+    Then, running M-x run-lisp starts a repl with the correct classpath set up for you.
+</p>
+<p>    
+    When you followed the steps, running C-c C-c in a clojure source blog sends the s-exp to your <b>inferior-lisp</b>
+    buffer where it is evaluated.
+</p>
+<p>
+    With this I have a miminally usable set up for org-mode-babel and clojure and are ready to start using it for
+    porting PAIP to clojure.
+</p></div>
+
+</div>
+
+<div id="outline-container-1-1-2" class="outline-4">
+<h4 id="sec-1-1-2"><span class="section-number-4">1.1.2</span> Missing features</h4>
+<div class="outline-text-4" id="text-1-1-2">
+
+<p>    It turns out that only the most basic functionality is available with this setup.
+    According to the <a href="http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-clojure.html">instruction page</a> org-babel supports sessions and you can specify whether the result is shown
+    in the org-mode buffer when evaluated. 
+</p><ul>
+<li id="sec-1-1-2-1">Results<br/>
+     As example, insert this code blog in a .org file
+
+
+
+<pre class="example">#+name: basic-session-clojure-table-results
+#+begin_src clojure :session s1 :results value
+   [ 1 2 3 4]
+#+end_src
+</pre>
+
+<p>
+     and evaluate C-c C-c whith the point within the source block.
+     the instruction page says that the following block should have been inserted:
+</p>
+
+
+<pre class="example">#+resname: basic-session-clojure-table-results
+| 1 | 2 | 3 | 4 |
+</pre>
+
+<p>
+     (the vector has been automagically converted to an org-mode table)
+</p>
+<p>
+     This doesn't work with this setup, because (lisp-eval-string text) returns nil. The result is only 
+     shown in the <b>inferior-lisp</b> buffer and I don't know if there is a way getting the result back.
+</p>
+<p>
+     But with emacs, I was able to automate the process of getting the results from the <b>inferior-lisp</b> buffer using
+     a keyboard-macro. The macro consists of the following steps:
+</p><ol>
+<li>Execute C-c C-c
+</li>
+<li>M-x b to the <b>inferior-lisp</b> buffer
+</li>
+</ol>
+
+<p>        the s-exp has now been evaluated and a new user&gt; line was printed. 
+</p><ol>
+<li>Go one line up and copy everything starting after user&gt; to get the result
+</li>
+<li>Switch to the org-buffer again
+</li>
+<li>Copy the result - I insert following text: ;=&gt; result 
+</li>
+<li>Switch to the <b>inferior-lisp</b> buffer again
+</li>
+<li>place cursor at it's original position that is at the end of the buffer
+</li>
+<li>Switch to the org-bugger
+</li>
+</ol>
+
+<p>      It is a rather lengthy kbd-macro but it does it's job. I recommend that you name it so that you don't have to
+      define it again and again :) (emacs supports the lazy one)
+</p>
+<p>
+      I think it would be better to implement that as a elisp function but I don't know enough emacs-lis to do this.
+      Any help would be appreciated
+</p></li>
+</ul>
+<ul>
+<li id="sec-1-1-2-2">Sessions<br/>
+     Org-mode-babel has also support for multiple sessions which run independend from another.
+     Consider following example (also from the instruction page)
+
+
+
+<pre class="example">#+name: set-clojure-session-var-s1
+#+begin_src clojure :session s1 :results value
+(def *var* [1 2 3])
+#+end_src
+     
+#+name: set-clojure-session-var-s2
+#+begin_src clojure :session s2 :results value
+(def *var* [3 4 5 6 7 8 9])
+#+end_src
+     
+#+name: get-clojure-session-var-s1
+#+begin_src clojure :session s1 :results value
+(count *var*)
+#+end_src
+     
+#+name: get-clojure-session-var-s2
+#+begin_src clojure :session s2 :results value
+(count *var*)
+#+end_src
+</pre>
+
+
+<p>
+     This should open 2 slime-sessions and insert the results after the src-blocks.
+     It doesn't work too. org-babel clojure isn't able to start a slime-session.
+     I have not implemented a workaround for this because I think I won't need it right now, but
+     here are my thoughts of how to implement sessions:
+</p>
+<p>     
+     When org-babel clojure should start a session it first checks whether a Buffer with the session name
+     already exists. If not, it runs the run-lisp command and renames the <b>inferior-lisp</b> buffer to the session's name.
+     If it exists it sets the buffer to the actual inferior lisp buffer according to the comment <a href="http://www.audacity-forum.de/download/edgar/nyquist/nyquist-doc/examples/emacs/sources/inferior-lisp.html">here</a>.
+     After this it runs a function to get the result from the buffer and inserts it after the src blog
+     (see the section results above)
+</p>
+</li>
+</ul>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Final thoughts</h3>
+<div class="outline-text-3" id="text-1-2">
+
+<p>   org-mode + babel is a great tool for literate programming.
+   Althoug the described setup is outdated and doesn't work know, with the setup descripbed above you can use the
+   basic features of org-babel-clojure. The not language agnostic functions are working of course!
+</p>
+<p>
+   I am thankfull for any comment/recommendation regarding the setup and for advice/help how to implement this in
+   emacs lisp and contributing it back to org-babel.
+</p>
+
+</div>
+</div>
+</div>
+</div>
+
+<div id="postamble">
+<p class="date">Date: 2012-05-27T23:06+0200</p>
+<p class="author">Author: kima</p>
+<p class="creator">Org version 7.8.09 with Emacs version 23</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>

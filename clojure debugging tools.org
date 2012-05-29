@@ -1,0 +1,5 @@
+* debugging tools are very valuable to have----
+** form debugging macro 
+** trace/untrace 
+** break macro
+** 
