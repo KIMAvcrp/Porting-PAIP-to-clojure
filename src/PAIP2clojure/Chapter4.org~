@@ -1,0 +1,6 @@
+#+TITLE:Porting PAIP to clojure - Chapter 4  
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+BABEL: :results output :exports both :tangle yes
+#+STARTUP:showall
+-----

@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Literate Programming in Clojure </title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="Literate Programming in Clojure "/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2012-05-30T11:17+0200"/>
+<meta name="author" content="Maik Schünemann"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style><style type="text/css">pre {
+    border: 1pt solid #AEBDCC;
+	color:white;
+ background-color: #000000;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  } </style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">Literate Programming in Clojure </h1>
+
+
+<hr/>
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Literate programming in clojure using org-mode babel</a>
+<ul>
+<li><a href="#sec-1-1">1.1 Literate programming</a></li>
+<li><a href="#sec-1-2">1.2 Org-mode-babel</a>
+<ul>
+<li><a href="#sec-1-2-1">1.2.1 Setting up org-mode-babel with clojure</a></li>
+<li><a href="#sec-1-2-2">1.2.2 Interacting with clojure code.</a></li>
+<li><a href="#sec-1-2-3">1.2.3 Exporting to html</a></li>
+</ul>
+</li>
+<li><a href="#sec-1-3">1.3 the org-file</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Literate programming in clojure using org-mode babel</h2>
+<div class="outline-text-2" id="text-1">
+
+<p>  In my previous post &hellip; I showed a setup of clojure with org-mode babel using inferior lisp.
+  In this post I'll first show a double setup with both inferior-lisp and slime, and then I will
+  show how to use org-babel-clojure for literate programming.
+</p>
+</div>
+
+<div id="outline-container-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Literate programming</h3>
+<div class="outline-text-3" id="text-1-1">
+
+<p>   Who doesn't know this situation:
+   You have to modify someone others code but you have no clue what this code should do. Searching
+   around the (often barely documentation) doesn't help much either, because it is often not clear
+   what intention the author had with the code, or why he implemented it that way.
+   <a href="http://de.wikipedia.org/wiki/Literate_programming">Literate programming</a> does not only help others reading your code, but it helps you as well,because
+</p><ul>
+<li>writing down your intention and explaining it makes it easier for you to code it
+</li>
+<li>it helps you to be clear about your design decisions
+</li>
+<li>writing it down intented to be read by others makes you to automatically write code of better quality
+</li>
+</ul>
+
+<p>   In Literate programming, you mix the explanation of the programm and the source code in one file.
+   The source code can be automatically extracted. This is called tangling. It is also possible to evaluate
+   the code while you are in the document.
+</p></div>
+
+</div>
+
+<div id="outline-container-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Org-mode-babel</h3>
+<div class="outline-text-3" id="text-1-2">
+
+<p>   <a href="http://orgmode.org/worg/org-contrib/babel/">Babel</a> is a part of <a href="http://orgmode.org/">org-mode</a> that is a full featured literate programming program. Being part of org-mode,
+   it is also able to be exported into a variety of formats including latex and html. I am using it to write
+   my series of 'Porting PAIP to clojure'. Each blog-post is just a .org file which gets exported to html and
+   uploaded on blogger. Here is the setup:
+</p>
+</div>
+
+<div id="outline-container-1-2-1" class="outline-4">
+<h4 id="sec-1-2-1"><span class="section-number-4">1.2.1</span> Setting up org-mode-babel with clojure</h4>
+<div class="outline-text-4" id="text-1-2-1">
+
+<p>    Fortunately, clojure is a supported language of org-mode, but it's documentation is outdated. So add following
+    to your .emacs file:
+</p>
+
+
+<pre class="src src-elisp">(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">ob</span>)
+(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">ob-tangle</span>)
+(add-to-list 'org-babel-tangle-lang-exts '(<span style="color: #ffa07a;">"clojure"</span> . <span style="color: #ffa07a;">"clj"</span>))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (clojure . t)))
+(<span style="color: #00ffff;">require</span> '<span style="color: #7fffd4;">ob-clojure</span>)
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">org-babel-execute:clojure</span> (body params)
+  <span style="color: #ffa07a;">"Evaluate a block of Clojure code with Babel."</span>
+  (concat <span style="color: #ffa07a;">"=&gt; "</span>
+          (<span style="color: #00ffff;">if</span> (fboundp 'slime-eval)
+              (slime-eval `(swank:interactive-eval-region ,body))
+           (<span style="color: #00ffff;">if</span> (fboundp 'lisp-eval-string)
+             (lisp-eval-string body)
+              (<span style="color: #ffc0cb; font-weight: bold;">error</span> <span style="color: #ffa07a;">"You have to start a clojure repl first!"</span>)))))
+
+(setq org-src-fontify-natively t)
+(setq org-confirm-babel-evaluate nil)
+(setq org-export-babel-evaluate nil)
+(setq org-src-window-setup 'current-window)
+(setq inferior-lisp-program <span style="color: #ffa07a;">"lein repl"</span>)
+</pre>
+
+<p>
+    (I assume you have a recent org-mode installed)
+    It will work with either inferior lisp using lein repl, which has the advantage that you can run it without
+    a project.clj file, or with M-x clojure-jack-in, which gives you the goddies of slime with clojure.
+</p>
+<p>
+    I have also written a few lines to make the exported html look better and defined a skeleton to quickly insert
+    the first lines in the .org file. If you type C-S-f4, you will be prompted for the title and the content of the
+    skeleton will be inserted.
+</p>
+
+
+<pre class="src src-elisp">  (<span style="color: #00ffff;">define-skeleton</span> <span style="color: #87cefa;">org-skeleton</span>
+  <span style="color: #ffa07a;">"Header info for a emacs-org file."</span>
+  <span style="color: #ffa07a;">"Title: "</span>
+  <span style="color: #ffa07a;">"#+TITLE:"</span> str <span style="color: #ffa07a;">" \n"</span>
+  <span style="color: #ffa07a;">"#+AUTHOR: Maik Sch&#252;nemann\n"</span>
+  <span style="color: #ffa07a;">"#+email: maikschuenemann@gmail.com\n"</span>
+  <span style="color: #ffa07a;">"#+STARTUP:showall\n"</span>
+  <span style="color: #ffa07a;">"-----"</span>
+ )
+(global-set-key [C-S-f4] 'org-skeleton)
+
+(setq org-export-html-style-extra <span style="color: #ffa07a;">"&lt;style type=\"text/css\"&gt;pre {\n    border: 1pt solid #AEBDCC;\n   color:white;\n background-color: #000000;\n     padding: 5pt;\n font-family: courier, monospace;\n        font-size: 90%;\n        overflow:auto;\n  } &lt;/style&gt;"</span>)
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-1-2-2" class="outline-4">
+<h4 id="sec-1-2-2"><span class="section-number-4">1.2.2</span> Interacting with clojure code.</h4>
+<div class="outline-text-4" id="text-1-2-2">
+
+<p>    Start a repl first. Either via M-x run-lisp or with M-x clojure-jack-in. Note, if you use the former, the
+    result of the code won't get inserted in the .org file after evaluation.
+</p>
+<p>
+    To write some clojure-code, type the following (may be good to define a kbd-macro to speed this up)
+</p>
+
+
+<pre class="example">#+begin_src clojure :results output :exports both
+(def six (+ 1 2 3))
+#+end_src
+</pre>
+
+<p>
+    If you place your cursor between the begin<sub>src</sub> and end<sub>src</sub> and type C-c C-c, you will see the following:
+</p>
+
+
+<pre class="example">#+begin_src clojure :results output :exports both
+ (def six (+ 1 2 3))
+ #+end_src
+
+#+RESULTS:
+: =&gt; #'user/six
+</pre>
+
+<p>
+    Note that the code got evaluated and is now defined in the repl. So if you evaluate the following (either in
+    the file, or in the repl, you will see:
+</p>
+
+
+<pre class="example">#+begin_src clojure :results output :exports both
+six
+#+end_src 
+
+#+RESULTS:
+: =&gt; 6
+</pre>
+
+<p>
+    So you loose nothing of the interactive development you love when coding clojure.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-1-2-3" class="outline-4">
+<h4 id="sec-1-2-3"><span class="section-number-4">1.2.3</span> Exporting to html</h4>
+<div class="outline-text-4" id="text-1-2-3">
+
+<p>    When you are done, you can export the file to html by typing C-c C-e h or C-c C-e b to see the exported
+    html in your standart browser.
+    If you want the source code to be colorized like you see it in clojure-mode, you need to install the
+    htmlize package (via elpa)
+    The clojure code shown above will export to the following:
+</p>
+
+
+
+<pre class="src src-clojure">(<span style="color: #00ffff;">def</span> <span style="color: #87cefa;">six</span> (<span style="color: #eedd82;">+</span> 1 2 3))
+</pre>
+
+
+<pre class="example">
+=&gt; #'user/six
+</pre>
+
+<p>    Cool, nicely colored clojure code in your html-documentation or your blog-post.
+    So This should be enough to get you started using org-mode-babel with clojure for Literate Programming.
+    It is interactive like writing normal clojure code and it helps you to think more clearly about your code.
+</p>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> the org-file</h3>
+<div class="outline-text-3" id="text-1-3">
+
+<p>   Here is the org-file that you see right now:
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="postamble">
+<p class="date">Date: 2012-05-30T11:17+0200</p>
+<p class="author">Author: Maik Schünemann</p>
+<p class="creator">Org version 7.8.09 with Emacs version 23</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>

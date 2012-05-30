@@ -1,0 +1,37 @@
+#+TITLE:Literate Programming in Clojure 
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+STARTUP:showall
+-----
+* Literate programming in clojure using org-mode babel
+  In my previous post ...
+
+
+  #+begin_src clojure
+  (+ 1 2 3)
+  #+end_src
+
+  #+RESULTS:
+  |   | 6 |
+
+  #+begin_src clojure
+  (map inc [2 3 4])
+  #+end_src
+
+  #+RESULTS:
+  |   | (3 4 5) |
+
+  #+begin_src clojure
+  (+ 3 4 5)
+  #+end_src
+
+  #+RESULTS:
+  | 12 |
+
+  #+begin_src clojure :exports both
+  (+ 1 2 3)
+  #+end_src
+
+  #+RESULTS:
+  : => 6
+

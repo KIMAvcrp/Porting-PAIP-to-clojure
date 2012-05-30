@@ -1,0 +1,128 @@
+#+TITLE:Literate Programming in Clojure 
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+STARTUP:showall
+-----
+* Literate programming in clojure using org-mode babel
+  In my previous post ... I showed a setup of clojure with org-mode babel using inferior lisp.
+  In this post I'll first show a double setup with both inferior-lisp and slime, and then I will
+  show how to use org-babel-clojure for literate programming.
+** Literate programming
+   Who doesn't know this situation:
+   You have to modify someone others code but you have no clue what this code should do. Searching
+   around the (often barely documentation) doesn't help much either, because it is often not clear
+   what intention the author had with the code, or why he implemented it that way.
+   [[http://de.wikipedia.org/wiki/Literate_programming][Literate programming]] does not only help others reading your code, but it helps you as well,because
+   - writing down your intention and explaining it makes it easier for you to code it
+   - it helps you to be clear about your design decisions
+   - writing it down intented to be read by others makes you to automatically write code of better quality
+   In Literate programming, you mix the explanation of the programm and the source code in one file.
+   The source code can be automatically extracted. This is called tangling. It is also possible to evaluate
+   the code while you are in the document.
+** Org-mode-babel
+   [[http://orgmode.org/worg/org-contrib/babel/][Babel]] is a part of [[http://orgmode.org/][org-mode]] that is a full featured literate programming program. Being part of org-mode,
+   it is also able to be exported into a variety of formats including latex and html. I am using it to write
+   my series of 'Porting PAIP to clojure'. Each blog-post is just a .org file which gets exported to html and
+   uploaded on blogger. Here is the setup:
+*** Setting up org-mode-babel with clojure
+    Fortunately, clojure is a supported language of org-mode, but it's documentation is outdated. So add following
+    to your .emacs file:
+    #+begin_src elisp
+    (require 'ob)
+    (require 'ob-tangle)
+    (add-to-list 'org-babel-tangle-lang-exts '("clojure" . "clj"))
+    
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((emacs-lisp . t)
+       (clojure . t)))
+    (require 'ob-clojure)
+    
+    (defun org-babel-execute:clojure (body params)
+      "Evaluate a block of Clojure code with Babel."
+      (concat "=> "
+              (if (fboundp 'slime-eval)
+                  (slime-eval `(swank:interactive-eval-region ,body))
+               (if (fboundp 'lisp-eval-string)
+                 (lisp-eval-string body)
+                  (error "You have to start a clojure repl first!")))))
+    
+    (setq org-src-fontify-natively t)
+    (setq org-confirm-babel-evaluate nil)
+    (setq org-export-babel-evaluate nil)
+    (setq org-src-window-setup 'current-window)
+    (setq inferior-lisp-program "lein repl")
+    #+end_src
+    (I assume you have a recent org-mode installed)
+    It will work with either inferior lisp using lein repl, which has the advantage that you can run it without
+    a project.clj file, or with M-x clojure-jack-in, which gives you the goddies of slime with clojure.
+
+    I have also written a few lines to make the exported html look better and defined a skeleton to quickly insert
+    the first lines in the .org file. If you type C-S-f4, you will be prompted for the title and the content of the
+    skeleton will be inserted.
+    #+begin_src elisp
+    (define-skeleton org-skeleton
+    "Header info for a emacs-org file."
+    "Title: "
+    "#+TITLE:" str " \n"
+    "#+AUTHOR: Maik Schünemann\n"
+    "#+email: maikschuenemann@gmail.com\n"
+    "#+STARTUP:showall\n"
+    "-----"
+   )
+  (global-set-key [C-S-f4] 'org-skeleton)
+  
+  (setq org-export-html-style-extra "<style type=\"text/css\">pre {\n    border: 1pt solid #AEBDCC;\n	color:white;\n background-color: #000000;\n	padding: 5pt;\n	font-family: courier, monospace;\n        font-size: 90%;\n        overflow:auto;\n  } </style>")
+    #+end_src
+    
+*** Interacting with clojure code.
+    Start a repl first. Either via M-x run-lisp or with M-x clojure-jack-in. Note, if you use the former, the
+    result of the code won't get inserted in the .org file after evaluation.
+
+    To write some clojure-code, type the following (may be good to define a kbd-macro to speed this up)
+    #+begin_example
+    #+begin_src clojure :results output :exports both
+    (def six (+ 1 2 3))
+    #+end_src
+    #+end_example
+    If you place your cursor between the begin_src and end_src and type C-c C-c, you will see the following:
+    #+begin_example
+    #+begin_src clojure :results output :exports both
+     (def six (+ 1 2 3))
+     #+end_src
+
+    #+RESULTS:
+    : => #'user/six
+    #+end_example
+    Note that the code got evaluated and is now defined in the repl. So if you evaluate the following (either in
+    the file, or in the repl, you will see:
+    #+begin_example
+    #+begin_src clojure :results output :exports both
+    six
+    #+end_src 
+
+    #+RESULTS:
+    : => 6
+    #+end_example
+    So you loose nothing of the interactive development you love when coding clojure.
+
+*** Exporting to html
+    When you are done, you can export the file to html by typing C-c C-e h or C-c C-e b to see the exported
+    html in your standart browser.
+    If you want the source code to be colorized like you see it in clojure-mode, you need to install the
+    htmlize package (via elpa)
+    The clojure code shown above will export to the following:
+
+    #+begin_src clojure :results output :exports both
+     (def six (+ 1 2 3))
+     #+end_src
+
+    #+RESULTS:
+    : => #'user/six
+    Cool, nicely colored clojure code in your html-documentation or your blog-post.
+    So This should be enough to get you started using org-mode-babel with clojure for Literate Programming.
+    It is interactive like writing normal clojure code and it helps you to think more clearly about your code.
+
+** the org-file
+   Here is the org-file that you see right now:
+   

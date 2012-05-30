@@ -279,4 +279,5 @@
    - use different evaluation functions with the same dataset
    - represent your problem so that it is easier to understand.
 
+
 Chapter 4 coming soon. It contains an implementation of the GPS, the General Problem Solver.

@@ -1,0 +1,64 @@
+#+TITLE:Porting PAIP to clojure - Chapter 4: GPS 
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+BABEL: :results output :exports both :tangle yes
+#+STARTUP:showall
+-----
+* PAIP to clojure - chapter 4
+  I continue to translate PAIP to clojure. This chapter covers the GPS program, the
+  General Problem Solver. As ever, the focus lies on the iterative process of developing
+  an (ai-) progam. Norvig presents 5 stages of an programming project, after which the
+  sections of the chapter are numbered:
+  1. Describe
+  2. Specify (in algorithmic terms) 
+  3. Implement                     
+  4. Test                            
+  5. Debug/Analyse (optional repeat)
+** 1. Description
+   GPS was the first program, which separated its problem-solving strategy from its knowledge of particular
+   problems. As problem-solving strategy it used [[http://en.wikipedia.org/wiki/Means-ends_analysis][means-ends analysis]]. In means-ends analysis you know in what
+   state you are right now and in what state you will be when you have solved your problem. The focus lies
+   on what is between your state now and the goal-state and how this distance can be overcome.
+   An Example:
+   I have to write an email. What Do I need to do to write an-email ? I have to type. What do I need to type?
+   I have to sit in front of my pc ? What do I need to do to sit in front of my pc ? Go to the PC ....
+
+   It is obvious that we have to be able to answer "What do I need to  ... "or, like the book points out "What is the
+   difference between..." from the set of all possible actions. And each actions could have itself preconditions,
+   for  which actions have to be taken befor this action can be taken.
+   So this is the shortform of the description, see PAIP for the full discussion.
+** 2. Specification
+   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification
+   In this stage, we refine the description to something that is representible in the implementation language.
+   This also gives the starting point for the implementation. And it greatly  influences the design part.
+   I tink the stage of Specification is best defined with:
+   Find the most natural mapping between the problem and the implementation language!
+   So let's see how means-ends analysis can be represented in clojure:
+    - A state can be represented as a set of conditions, so as #{unknown poor} and #{rich famous}. We need 2 states:
+     the current state and the goal state (which of the two above is the goal-state...?)
+    - The allowable actions can naturally be represented as a collection of actions, which can be worked in 
+      order to find the first, that is applicable
+    - An  needs a Name, a descriptions of what states a person has to be in in order to take the action and
+      a description what states of the person will change after taking the action. 
+      An action can therefor be described by a map (or later by a record) with a :name and a :precond field. 
+      The changes of the state of the acting person are trickier. Consider an action "Become rich" has as precond
+      being poor and changes that to being rich. It could also remove states or add new ones. The change of one 
+      state to the other can easily be represented in terms of removing the old one and adding the new one.
+      Thus the Action will have two more fields, a :del-list and a :add-list which contains states which will 
+      be added or removed from the person who takes the action.
+    - Last, but not least, we have to specify the entry point of the application, the GPS-function.
+      We need a start-state, a goal-state and the allowed actions. Thus it can be represented as a three argument
+      pure function (or as a two argument function which depends on a dynamic rebindable *list-of-ops* var, but for
+      cosistency with the book I will go with the pure function).
+   
+  Now we have specified the single entities of the program. The algorithm is next to go:
+  GPS succeeds if it can achieve all single conditions in the goal state by applying a sequence of actions.
+  To decide wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
+  add-list the action is appropriate and GPS wants to take the action. It can take the action if it can achieve
+  all preconds of the action, which is just calling itself with the preconds as goal-state. If was able to
+  achieve every condition of the goal state, it succeedes.
+  (Note that this is the first, most simplest specification, it will be refined in the later sections)
+  Ok, this is enough for the first implementation of the program!
+** 3. Implementation
+   
+
