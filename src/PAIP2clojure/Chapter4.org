@@ -1,19 +1,24 @@
-#+TITLE:Porting PAIP to clojure - Chapter 4: GPS 
+#+TITLE:Porting PAIP to clojure - Chapter 4: GPS - Part 1
 #+AUTHOR: Maik Schünemann
 #+email: maikschuenemann@gmail.com
 #+BABEL: :results output :exports both :tangle yes
 #+STARTUP:showall
 -----
+#+begin_src clojure :results silent :exports none
+    
+#+end_src 
 * PAIP to clojure - chapter 4
   I continue to translate PAIP to clojure. This chapter covers the GPS program, the
   General Problem Solver. As ever, the focus lies on the iterative process of developing
   an (ai-) progam. Norvig presents 5 stages of an programming project, after which the
   sections of the chapter are numbered:
-  1. Describe
-  2. Specify (in algorithmic terms) 
-  3. Implement                     
-  4. Test                            
-  5. Debug/Analyse (optional repeat)
+  1. Description
+  2. Specification (in algorithmic terms) 
+  3. Implementation                     
+  4. Testing                            
+  5. Debugging/Analysis (optional repeat)
+  In this post, I will describe the first four steps, from an idea to the first running program. The analysis 
+  and refinement of the program will be covered in part 2.
 ** 1. Description
    GPS was the first program, which separated its problem-solving strategy from its knowledge of particular
    problems. As problem-solving strategy it used [[http://en.wikipedia.org/wiki/Means-ends_analysis][means-ends analysis]]. In means-ends analysis you know in what
@@ -26,12 +31,12 @@
    It is obvious that we have to be able to answer "What do I need to  ... "or, like the book points out "What is the
    difference between..." from the set of all possible actions. And each actions could have itself preconditions,
    for  which actions have to be taken befor this action can be taken.
-   So this is the shortform of the description, see PAIP for the full discussion.
+   This is a very brief description, I encourage you to read the section in PAIP for the full discussion.
 ** 2. Specification
-   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification
+   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification.
    In this stage, we refine the description to something that is representible in the implementation language.
-   This also gives the starting point for the implementation. And it greatly  influences the design part.
-   I tink the stage of Specification is best defined with:
+   This also gives the starting point for the implementation,greatly influencing the design part.
+   I tink the stage of Specification is best described with:
    Find the most natural mapping between the problem and the implementation language!
    So let's see how means-ends analysis can be represented in clojure:
     - A state can be represented as a set of conditions, so as #{unknown poor} and #{rich famous}. We need 2 states:
@@ -40,25 +45,241 @@
       order to find the first, that is applicable
     - An  needs a Name, a descriptions of what states a person has to be in in order to take the action and
       a description what states of the person will change after taking the action. 
-      An action can therefor be described by a map (or later by a record) with a :name and a :precond field. 
+      An action can therefor be described by a map (or later by a record) with a :action and a :precond field. 
       The changes of the state of the acting person are trickier. Consider an action "Become rich" has as precond
       being poor and changes that to being rich. It could also remove states or add new ones. The change of one 
       state to the other can easily be represented in terms of removing the old one and adding the new one.
       Thus the Action will have two more fields, a :del-list and a :add-list which contains states which will 
       be added or removed from the person who takes the action.
     - Last, but not least, we have to specify the entry point of the application, the GPS-function.
-      We need a start-state, a goal-state and the allowed actions. Thus it can be represented as a three argument
-      pure function (or as a two argument function which depends on a dynamic rebindable *list-of-ops* var, but for
-      cosistency with the book I will go with the pure function).
+      We need a start-state, a goal-state and the allowed actions. Thus it can be represented as a function which
+      takes a start-state and a goal states, and works with the *ops* variable.
    
   Now we have specified the single entities of the program. The algorithm is next to go:
   GPS succeeds if it can achieve all single conditions in the goal state by applying a sequence of actions.
   To decide wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
   add-list the action is appropriate and GPS wants to take the action. It can take the action if it can achieve
-  all preconds of the action, which is just calling itself with the preconds as goal-state. If was able to
-  achieve every condition of the goal state, it succeedes.
-  (Note that this is the first, most simplest specification, it will be refined in the later sections)
+  all preconds of the action, which is just calling itself with the preconds as goal-state, updating the current
+  state as it goes along. If was able to achieve every condition of the goal state, it succeedes
+  (Note that this is the first, most simplest specification, it will be refined in part 2).
   Ok, this is enough for the first implementation of the program!
 ** 3. Implementation
-   
+     First, here is a sample operations list. It becomes easier for me to implement, when I see the data my code
+     works with:
+     #+begin_src clojure :results output :exports both
+     (ns PAIP2clojure.Chapter4)
 
+     (def school-ops
+      [ {:action "drive-son-to-school"
+         :preconds #{ "son-at-home" "car-works"}
+         :add-list #{ "son-at-school"}
+         :del-list #{ "son-at-home"}}
+        {:action "shop-installs-battery"
+         :preconds #{"car-needs-battery" "shop-knows-problem" "shop-has-money"}
+         :add-list #{"car-works"}}
+        {:action "tell-shop-problem"
+         :preconds #{"in-communication-with-shop"}
+         :add-list #{"shop-knows-problem"}}
+        {:action "telephone-shop"
+         :preconds #{"know-phone-number"}
+         :add-list #{"in-communication-with-shop"}}
+        {:action "look-up-number"
+         :preconds #{"have-phone-book"}
+         :add-list #{"know-phone-number"}}
+        {:action "give-shop-money"
+         :preconds #{"have-money"}
+         :add-list #{"shop-has-money"}
+         :del-list #{"have-money"}}])
+     (def ^:dynamic *ops* school-ops)
+   #+end_src 
+
+     #+RESULTS:
+     : => #'PAIP2clojure.Chapter4/*ops*
+
+  In the implementation, I choose not follow Norvigs route and
+  modify the current state in the function. Instead I changed the implementation
+  to be side-effect free and hence more ideomatic clojure.
+  Here is the implementation from the book:
+  #+begin_src clojure :exports both :results output
+  (defvar *state* nil "The current state: a list of conditions.")
+
+  (defvar *ops* nil "A list of available operators.")
+  
+  (defstruct op "An operation"
+    (action nil) (preconds nil) (add-list nil) (del-list nil))
+  
+  (defun GPS (*state* goals *ops*)
+    "General Problem Solver: achieve all goals using *ops*."
+    (if (every #'achieve goals) 'solved))
+  
+  (defun achieve (goal)
+    "A goal is achieved if it already holds,
+    or if there is an appropriate op for it that is applicable."
+    (or (member goal *state*)
+        (some #'apply-op 
+              (find-all goal *ops* :test #'appropriate-p))))
+  
+  (defun appropriate-p (goal op)
+    "An op is appropriate to a goal if it is in its add list."
+    (member goal (op-add-list op)))
+  
+  (defun apply-op (op)
+    "Print a message and update *state* if op is applicable."
+    (when (every #'achieve (op-preconds op))
+      (print (list 'executing (op-action op)))
+      (setf *state* (set-difference *state* (op-del-list op)))
+      (setf *state* (union *state* (op-add-list op)))
+      t))
+  #+end_src
+  I had to change the return value of achieve and apply-op to an updated current-state instead of returning
+  a truth value and destructively modifying the current state as side effect.
+  Also, I couldn't use every? because the state has to be updated after every application of achieve.
+  Thus I made a helper function every-accum? which takes a 2-argument function a start-state and a collection
+  and reduces the collection applying the function. When the result is nil, the function returns nil.
+
+  Notice the use of the with-auto-declare macro which I described in a previous post. This let me avoid
+  to add a declare binding everytime I make a forward declaration. If a symbol starts with D!-, a forward-declaration
+  will be automagically added for it.
+  #+begin_src clojure :exports both :results output
+    (with-auto-declare
+     (use 'clojure.set)
+     (use 'auto-declare.core)
+
+     (defn GPS [state goals]
+       (let [new-state (D!-every-accum? D!-achieve state goals)]
+         (if (nil? new-state)
+           'not-solved
+           'solved)))
+
+     (defn achieve
+       "return the new-state after the goal is achieved or nil
+        if it could not be archieved"
+       [current-state goal]
+       (if (contains? current-state goal)
+         current-state
+          (some (partial D!-apply-op current-state)
+            (filter #(D!-appropriate? goal %) *ops*))))
+    
+     (defn appropriate? [goal op]
+       (contains? (:add-list op) goal))
+        
+     (defn every-accum? [func start coll]
+       (reduce #(if (nil? %1)
+                  nil
+                  (func %1 %2)) start coll))
+     
+     (defn apply-op [current-state op]
+       (let [new-current-state (every-accum? achieve current-state (:preconds op))]
+         (if (nil? new-current-state)
+           nil
+           (do (println (str "executing " (:action op)))
+               (-> new-current-state (difference (:del-list op)) (union (:add-list op))))))))
+   #+end_src
+  #+RESULTS:
+  : => #'PAIP2clojure.Chapter4/apply-op
+  Ok, now comes the 4. stage: Testing
+** Testing
+  Let's test the implementation with the *ops* defined above and see how it works.
+  Norvig presents three sample applications:
+  #+begin_src clojure :exports both :results output
+  (GPS #{"son-at-home" "car-needs-battery" "have-money" "have-phone-book"} #{"son-at-school"})
+  #+end_src
+
+  #+RESULTS:
+: executing look-up-number
+: executing telephone-shop
+: executing tell-shop-problem
+: executing give-shop-money
+: executing shop-installs-battery
+: executing drive-son-to-school
+: executing look-up-number
+: executing telephone-shop
+: executing tell-shop-problem
+: executing give-shop-money
+: executing shop-installs-battery
+: executing drive-son-to-school
+: solved
+  : => solved
+
+  #+begin_src clojure :exports both :results output
+  (GPS #{"son-at-home" "car-needs-battery" "have-money"}
+       #{"son-at-school"})
+  #+end_src
+
+  #+RESULTS:
+  : => not-solved
+
+  #+begin_src clojure :exports both :results output
+  (GPS #{"son-at-home" "car-works"}
+       #{"son-at-school"})
+  #+end_src
+
+  #+RESULTS:
+  : executing drive-son-to-school
+  : => solved
+  The second example has no solution, because the person does not have a phone-book and thus can't come in
+  communication with the shop and the shop cant repair the car, so he can't drive his son to school
+
+  But how does it actually work? Trace is a good way to find out.
+  #+begin_src clojure :results output :exports both
+  (dotrace [GPS achieve appropriate? apply-op every-accum?] 
+    (GPS #{"son-at-home" "car-needs-battery" "have-money" "have-phone-book"} #{"son-at-school"}))  
+  #+end_src 
+
+  #+RESULTS:
+:  TRACE t3410: (GPS #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"son-at-school"})
+:  TRACE t3411: | (every-accum? #<Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0> #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"car-works" "son-at-home"})
+:  TRACE t3412: | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "car-works")
+:  TRACE t3413: | | | (every-accum? #<Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0> #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"shop-knows-problem" "car-needs-battery" "shop-has-money"})
+:  TRACE t3414: | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "shop-knows-problem")
+:  TRACE t3415: | | | | | (every-accum? #<Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0> #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"in-communication-with-shop"})
+:  TRACE t3416: | | | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "in-communication-with-shop")
+:  TRACE t3417: | | | | | | | (every-accum? #<Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0> #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"know-phone-number"})
+:  TRACE t3418: | | | | | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "know-phone-number")
+:  TRACE t3419: | | | | | | | | | (every-accum? #<Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0> #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"have-phone-book"})
+:  TRACE t3420: | | | | | | | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "have-phone-book")
+:  TRACE t3420: | | | | | | | | | | => #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"}
+:  TRACE t3419: | | | | | | | | | => #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"}
+:  executing look-up-number
+:  TRACE t3418: | | | | | | | | => #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home"}
+:  TRACE t3417: | | | | | | | => #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home"}
+:  executing telephone-shop
+:  TRACE t3416: | | | | | | => #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3415: | | | | | => #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+:  executing tell-shop-problem
+:  TRACE t3414: | | | | => #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3421: | | | | (achieve #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} "car-needs-battery")
+:  TRACE t3421: | | | | => #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3422: | | | | (achieve #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} "shop-has-money")
+:  TRACE t3423: | | | | | (every-accum? #<Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0> #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} #{"have-money"})
+:  TRACE t3424: | | | | | | (achieve #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} "have-money")
+:  TRACE t3424: | | | | | | => #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3423: | | | | | => #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+:  executing give-shop-money
+:  TRACE t3422: | | | | => #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3413: | | | => #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+:  executing shop-installs-battery
+:  TRACE t3412: | | => #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3425: | | (achieve #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"} "son-at-home")
+:  TRACE t3425: | | => #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+:  TRACE t3411: | => #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+:  executing drive-son-to-school
+:  TRACE t3410: => solved
+  : => solved
+The output is rather lengthy, but you can find your way through. What is really great about tracing is, that
+you see all application of the functions with their arguments and results printed hierachically, so that the
+caller of a function is less deeply nested.
+Therefore it really helps in debugging and understanding code without manually adding debug statements or stepping
+through breakpoints etc.
+I am showing here the output when all functions are traced. Turning out tracing on a few functions make the
+output more readable, but you miss a bit about the whole picture.
+
+As you see, it tries to achieve the goals in reverse order, because it has to solve the subproblems first.
+The first action it can execute is look-up-number.
+After this, it knows the telefone-number, can phone the shop, the shop can repair
+the car and it can solve the problem of driving the son to school because the car works.
+
+In my next Post I will show the analysis of the implementation and a refinement to overcome some (many!)
+limitations f it.
+So stay tuned for part 2.
+As always, comments/advices etc are welcome.

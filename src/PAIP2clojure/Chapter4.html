@@ -3,11 +3,11 @@
                "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title>Porting PAIP to clojure - Chapter 4: GPS </title>
+<title>Porting PAIP to clojure - Chapter 4: GPS - Part 1</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
-<meta name="title" content="Porting PAIP to clojure - Chapter 4: GPS "/>
+<meta name="title" content="Porting PAIP to clojure - Chapter 4: GPS - Part 1"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-05-30T16:55+0200"/>
+<meta name="generated" content="2012-05-31T19:08+0200"/>
 <meta name="author" content="Maik Schünemann"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -99,10 +99,11 @@
 </div>
 
 <div id="content">
-<h1 class="title">Porting PAIP to clojure - Chapter 4: GPS </h1>
+<h1 class="title">Porting PAIP to clojure - Chapter 4: GPS - Part 1</h1>
 
 
 <hr/>
+
 
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
@@ -112,6 +113,8 @@
 <ul>
 <li><a href="#sec-1-1">1.1 1. Description</a></li>
 <li><a href="#sec-1-2">1.2 2. Specification</a></li>
+<li><a href="#sec-1-3">1.3 3. Implementation</a></li>
+<li><a href="#sec-1-4">1.4 Testing</a></li>
 </ul>
 </li>
 </ul>
@@ -127,19 +130,21 @@
   an (ai-) progam. Norvig presents 5 stages of an programming project, after which the
   sections of the chapter are numbered:
 </p><ol>
-<li>Describe
+<li>Description
 </li>
-<li>Specify (in algorithmic terms) 
+<li>Specification (in algorithmic terms) 
 </li>
-<li>Implement                     
+<li>Implementation                     
 </li>
-<li>Test                            
+<li>Testing                            
 </li>
-<li>Debug/Analyse (optional repeat)
+<li>Debugging/Analysis (optional repeat)
 </li>
 </ol>
 
-
+<p>  In this post, I will describe the first four steps, from an idea to the first running program. The analysis 
+  and refinement of the program will be covered in part 2.
+</p>
 </div>
 
 <div id="outline-container-1-1" class="outline-3">
@@ -158,7 +163,7 @@
    It is obvious that we have to be able to answer "What do I need to  &hellip; "or, like the book points out "What is the
    difference between&hellip;" from the set of all possible actions. And each actions could have itself preconditions,
    for  which actions have to be taken befor this action can be taken.
-   So this is the shortform of the description, see PAIP for the full discussion.
+   This is a very brief description, I encourage you to read the section in PAIP for the full discussion.
 </p></div>
 
 </div>
@@ -167,47 +172,324 @@
 <h3 id="sec-1-2"><span class="section-number-3">1.2</span> 2. Specification</h3>
 <div class="outline-text-3" id="text-1-2">
 
-<p>   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification
+<p>   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification.
    In this stage, we refine the description to something that is representible in the implementation language.
-   This also gives the starting point for the implementation. And it greatly  influences the design part.
-   I tink the stage of Specification is best defined with:
+   This also gives the starting point for the implementation,greatly influencing the design part.
+   I tink the stage of Specification is best described with:
    Find the most natural mapping between the problem and the implementation language!
    So let's see how means-ends analysis can be represented in clojure:
 </p><ul>
 <li>A state can be represented as a set of conditions, so as #{unknown poor} and #{rich famous}. We need 2 states:
      the current state and the goal state (which of the two above is the goal-state&hellip;?)
 </li>
-<li>The allowable operators can naturally be represented as a collection of operators, which can be worked in 
+<li>The allowable actions can naturally be represented as a collection of actions, which can be worked in 
       order to find the first, that is applicable
 </li>
-<li>An operator needs a Name, a descriptions of what states a person has to be in in order to take the action and
+<li>An  needs a Name, a descriptions of what states a person has to be in in order to take the action and
       a description what states of the person will change after taking the action. 
-      An operator can therefor described by a map (or later by a record) with a :name and a :precond field. 
+      An action can therefor be described by a map (or later by a record) with a :action and a :precond field. 
       The changes of the state of the acting person are trickier. Consider an action "Become rich" has as precond
       being poor and changes that to being rich. It could also remove states or add new ones. The change of one 
       state to the other can easily be represented in terms of removing the old one and adding the new one.
-      Thus the Operator will have two more fields, a :del-list and a :add-list which contains states which will 
+      Thus the Action will have two more fields, a :del-list and a :add-list which contains states which will 
       be added or removed from the person who takes the action.
 </li>
 <li>Last, but not least, we have to specify the entry point of the application, the GPS-function.
-      We need a start-state, a goal-state and the allowed operators. Thus it can be represented as a three argument
-      pure function (or as a two argument function which depends on a dynamic rebindable <b>list-of-ops</b> var, but for
-      cosistency with the book I will go with the pure function).
+      We need a start-state, a goal-state and the allowed actions. Thus it can be represented as a function which
+      takes a start-state and a goal states, and works with the <b>ops</b> variable.
 </li>
 </ul>
 
 
 <p>   
   Now we have specified the single entities of the program. The algorithm is next to go:
-</p>
+  GPS succeeds if it can achieve all single conditions in the goal state by applying a sequence of actions.
+  To decide wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
+  add-list the action is appropriate and GPS wants to take the action. It can take the action if it can achieve
+  all preconds of the action, which is just calling itself with the preconds as goal-state, updating the current
+  state as it goes along. If was able to achieve every condition of the goal state, it succeedes
+  (Note that this is the first, most simplest specification, it will be refined in part 2).
+  Ok, this is enough for the first implementation of the program!
+</p></div>
 
 </div>
+
+<div id="outline-container-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> 3. Implementation</h3>
+<div class="outline-text-3" id="text-1-3">
+
+<p>     First, here is a sample operations list. It becomes easier for me to implement, when I see the data my code
+     works with:
+</p>
+
+
+<pre class="src src-clojure">(<span style="color: #b0c4de;">ns</span> PAIP2clojure.<span style="color: #b0c4de;">Chapter4</span>)
+
+(<span style="color: #00ffff;">def</span> <span style="color: #87cefa;">school-ops</span>
+ [ {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"drive-son-to-school"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{ <span style="color: #ffa07a;">"son-at-home"</span> <span style="color: #ffa07a;">"car-works"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{ <span style="color: #ffa07a;">"son-at-school"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{ <span style="color: #ffa07a;">"son-at-home"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"shop-installs-battery"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"car-needs-battery"</span> <span style="color: #ffa07a;">"shop-knows-problem"</span> <span style="color: #ffa07a;">"shop-has-money"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"car-works"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"tell-shop-problem"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"in-communication-with-shop"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"shop-knows-problem"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"telephone-shop"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"know-phone-number"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"in-communication-with-shop"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"look-up-number"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"have-phone-book"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"know-phone-number"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"give-shop-money"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"have-money"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"shop-has-money"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"have-money"</span>}}])
+(<span style="color: #00ffff;">def</span> <span style="color: #7fffd4;">^:dynamic</span> <span style="color: #87cefa;">*ops*</span> school-ops)
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter4/*ops*
+</pre>
+
+
+<p>
+  In the implementation, I choose not follow Norvigs route and
+  modify the current state in the function. Instead I changed the implementation
+  to be side-effect free and hence more ideomatic clojure.
+  Here is the implementation from the book:
+</p>
+
+
+<pre class="src src-clojure">(<span style="color: #00ffff;">defvar</span> <span style="color: #87cefa;">*state*</span> nil <span style="color: #ffa07a;">"The current state: a list of conditions."</span>)
+
+(<span style="color: #00ffff;">defvar</span> <span style="color: #87cefa;">*ops*</span> nil <span style="color: #ffa07a;">"A list of available operators."</span>)
+
+(<span style="color: #00ffff;">defstruct</span> <span style="color: #87cefa;">op</span> <span style="color: #ffa07a;">"An operation"</span>
+  (action nil) (preconds nil) (add-list nil) (del-list nil))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">GPS</span> (<span style="color: #98fb98;">*state*</span> goals *ops*)
+  <span style="color: #ffa07a;">"General Problem Solver: achieve all goals using *ops*."</span>
+  (<span style="color: #b0c4de;">if</span> (every #'achieve goals) 'solved))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">achieve</span> (goal)
+  <span style="color: #ffa07a;">"A goal is achieved if it already holds,</span>
+<span style="color: #ffa07a;">  or if there is an appropriate op for it that is applicable."</span>
+  (<span style="color: #b0c4de;">or</span> (member goal *state*)
+      (<span style="color: #eedd82;">some</span> #'apply-op 
+            (find-all goal *ops* <span style="color: #7fffd4;">:test</span> #'appropriate-p))))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">appropriate-p</span> (goal op)
+  <span style="color: #ffa07a;">"An op is appropriate to a goal if it is in its add list."</span>
+  (member goal (op-add-list op)))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">apply-op</span> (op)
+  <span style="color: #ffa07a;">"Print a message and update *state* if op is applicable."</span>
+  (<span style="color: #b0c4de;">when</span> (every #'achieve (op-preconds op))
+    (<span style="color: #eedd82;">print</span> (<span style="color: #eedd82;">list</span> 'executing (op-action op)))
+    (setf *state* (set-difference *state* (op-del-list op)))
+    (setf *state* (<span style="color: #98fb98;">union</span> *state* (op-add-list op)))
+    t))
+</pre>
+
+<p>
+  I had to change the return value of achieve and apply-op to an updated current-state instead of returning
+  a truth value and destructively modifying the current state as side effect.
+  Also, I couldn't use every? because the state has to be updated after every application of achieve.
+  Thus I made a helper function every-accum? which takes a 2-argument function a start-state and a collection
+  and reduces the collection applying the function. When the result is nil, the function returns nil.
+</p>
+<p>
+  Notice the use of the with-auto-declare macro which I described in a previous post. This let me avoid
+  to add a declare binding everytime I make a forward declaration. If a symbol starts with D!-, a forward-declaration
+  will be automagically added for it.
+</p>
+
+
+<pre class="src src-clojure">(with-auto-declare
+ (<span style="color: #eedd82;">use</span> 'clojure.set)
+ (<span style="color: #eedd82;">use</span> 'auto-declare.core)
+
+ (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">GPS</span> [state goals]
+   (<span style="color: #b0c4de;">let</span> [new-state (D!-every-accum? D!-achieve state goals)]
+     (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-state)
+       'not-solved
+       'solved)))
+
+ (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">achieve</span>
+   <span style="color: #ffa07a;">"return the new-state after the goal is achieved or nil</span>
+<span style="color: #ffa07a;">    if it could not be archieved"</span>
+   [current-state goal]
+   (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">contains?</span> current-state goal)
+     current-state
+      (<span style="color: #eedd82;">some</span> (<span style="color: #eedd82;">partial</span> D!-apply-op current-state)
+        (<span style="color: #eedd82;">filter</span> #(D!-appropriate? goal %) *ops*))))
+
+ (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">appropriate?</span> [goal op]
+   (<span style="color: #eedd82;">contains?</span> (<span style="color: #7fffd4;">:add-list</span> op) goal))
+
+ (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">every-accum?</span> [func start coll]
+   (<span style="color: #eedd82;">reduce</span> #(<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> %1)
+              nil
+              (func %1 %2)) start coll))
+
+ (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">apply-op</span> [current-state op]
+   (<span style="color: #b0c4de;">let</span> [new-current-state (every-accum? achieve current-state (<span style="color: #7fffd4;">:preconds</span> op))]
+     (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-current-state)
+       nil
+       (<span style="color: #b0c4de;">do</span> (<span style="color: #eedd82;">println</span> (<span style="color: #eedd82;">str</span> <span style="color: #ffa07a;">"executing "</span> (<span style="color: #7fffd4;">:action</span> op)))
+           (<span style="color: #b0c4de;">-&gt;</span> new-current-state (<span style="color: #98fb98;">difference</span> (<span style="color: #7fffd4;">:del-list</span> op)) (<span style="color: #98fb98;">union</span> (<span style="color: #7fffd4;">:add-list</span> op))))))))
+</pre>
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter4/apply-op
+</pre>
+
+<p>  Ok, now comes the 4. stage: Testing
+</p></div>
+
+</div>
+
+<div id="outline-container-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> Testing</h3>
+<div class="outline-text-3" id="text-1-4">
+
+<p>  Let's test the implementation with the <b>ops</b> defined above and see how it works.
+  Norvig presents three sample applications:
+</p>
+
+
+<pre class="src src-clojure">(GPS #{<span style="color: #ffa07a;">"son-at-home"</span> <span style="color: #ffa07a;">"car-needs-battery"</span> <span style="color: #ffa07a;">"have-money"</span> <span style="color: #ffa07a;">"have-phone-book"</span>} #{<span style="color: #ffa07a;">"son-at-school"</span>})
+</pre>
+
+
+<pre class="example">
+executing look-up-number
+executing telephone-shop
+executing tell-shop-problem
+executing give-shop-money
+executing shop-installs-battery
+executing drive-son-to-school
+executing look-up-number
+executing telephone-shop
+executing tell-shop-problem
+executing give-shop-money
+executing shop-installs-battery
+executing drive-son-to-school
+solved
+=&gt; solved
+</pre>
+
+
+
+
+
+<pre class="src src-clojure">(GPS #{<span style="color: #ffa07a;">"son-at-home"</span> <span style="color: #ffa07a;">"car-needs-battery"</span> <span style="color: #ffa07a;">"have-money"</span>}
+     #{<span style="color: #ffa07a;">"son-at-school"</span>})
+</pre>
+
+
+<pre class="example">
+=&gt; not-solved
+</pre>
+
+
+
+
+
+<pre class="src src-clojure">(GPS #{<span style="color: #ffa07a;">"son-at-home"</span> <span style="color: #ffa07a;">"car-works"</span>}
+     #{<span style="color: #ffa07a;">"son-at-school"</span>})
+</pre>
+
+
+<pre class="example">
+executing drive-son-to-school
+=&gt; solved
+</pre>
+
+<p>  The second example has no solution, because the person does not have a phone-book and thus can't come in
+  communication with the shop and the shop cant repair the car, so he can't drive his son to school
+</p>
+<p>
+  But how does it actually work? Trace is a good way to find out.
+</p>
+
+
+<pre class="src src-clojure">(dotrace [GPS achieve appropriate? apply-op every-accum?] 
+  (GPS #{<span style="color: #ffa07a;">"son-at-home"</span> <span style="color: #ffa07a;">"car-needs-battery"</span> <span style="color: #ffa07a;">"have-money"</span> <span style="color: #ffa07a;">"have-phone-book"</span>} #{<span style="color: #ffa07a;">"son-at-school"</span>}))  
+</pre>
+
+
+<pre class="example">
+ TRACE t3410: (GPS #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"son-at-school"})
+ TRACE t3411: | (every-accum? #&lt;Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"car-works" "son-at-home"})
+ TRACE t3412: | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "car-works")
+ TRACE t3413: | | | (every-accum? #&lt;Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"shop-knows-problem" "car-needs-battery" "shop-has-money"})
+ TRACE t3414: | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "shop-knows-problem")
+ TRACE t3415: | | | | | (every-accum? #&lt;Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"in-communication-with-shop"})
+ TRACE t3416: | | | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "in-communication-with-shop")
+ TRACE t3417: | | | | | | | (every-accum? #&lt;Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"know-phone-number"})
+ TRACE t3418: | | | | | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "know-phone-number")
+ TRACE t3419: | | | | | | | | | (every-accum? #&lt;Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} #{"have-phone-book"})
+ TRACE t3420: | | | | | | | | | | (achieve #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"} "have-phone-book")
+ TRACE t3420: | | | | | | | | | | =&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"}
+ TRACE t3419: | | | | | | | | | =&gt; #{"car-needs-battery" "have-phone-book" "have-money" "son-at-home"}
+ executing look-up-number
+ TRACE t3418: | | | | | | | | =&gt; #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home"}
+ TRACE t3417: | | | | | | | =&gt; #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home"}
+ executing telephone-shop
+ TRACE t3416: | | | | | | =&gt; #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3415: | | | | | =&gt; #{"car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+ executing tell-shop-problem
+ TRACE t3414: | | | | =&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3421: | | | | (achieve #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} "car-needs-battery")
+ TRACE t3421: | | | | =&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3422: | | | | (achieve #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} "shop-has-money")
+ TRACE t3423: | | | | | (every-accum? #&lt;Chapter4$eval3393$fn__3396 PAIP2clojure.Chapter4$eval3393$fn__3396@6bb0b0a0&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} #{"have-money"})
+ TRACE t3424: | | | | | | (achieve #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"} "have-money")
+ TRACE t3424: | | | | | | =&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3423: | | | | | =&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "have-money" "son-at-home" "in-communication-with-shop"}
+ executing give-shop-money
+ TRACE t3422: | | | | =&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3413: | | | =&gt; #{"shop-knows-problem" "car-needs-battery" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+ executing shop-installs-battery
+ TRACE t3412: | | =&gt; #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3425: | | (achieve #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"} "son-at-home")
+ TRACE t3425: | | =&gt; #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+ TRACE t3411: | =&gt; #{"shop-knows-problem" "car-needs-battery" "car-works" "know-phone-number" "have-phone-book" "shop-has-money" "son-at-home" "in-communication-with-shop"}
+ executing drive-son-to-school
+ TRACE t3410: =&gt; solved
+=&gt; solved
+</pre>
+
+<p>The output is rather lengthy, but you can find your way through. What is really great about tracing is, that
+you see all application of the functions with their arguments and results printed hierachically, so that the
+caller of a function is less deeply nested.
+Therefore it really helps in debugging and understanding code without manually adding debug statements or stepping
+through breakpoints etc.
+I am showing here the output when all functions are traced. Turning out tracing on a few functions make the
+output more readable, but you miss a bit about the whole picture.
+</p>
+<p>
+As you see, it tries to achieve the goals in reverse order, because it has to solve the subproblems first.
+The first action it can execute is look-up-number.
+After this, it knows the telefone-number, can phone the shop, the shop can repair
+the car and it can solve the problem of driving the son to school because the car works.
+</p>
+<p>
+In my next Post I will show the analysis of the implementation and a refinement to overcome some (many!)
+limitations f it.
+So stay tuned for part 2.
+As always, comments/advices etc are welcome.
+</p></div>
 </div>
 </div>
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2012-05-30T16:55+0200</p>
+<p class="date">Date: 2012-05-31T19:08+0200</p>
 <p class="author">Author: Maik Schünemann</p>
 <p class="creator">Org version 7.8.09 with Emacs version 23</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

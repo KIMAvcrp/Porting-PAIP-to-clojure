@@ -50,7 +50,7 @@
     #+end_src
 
     #+RESULTS:
-    : => #'user/verb
+    : => #'auto-declare.core/verb
 
     I use vectors instead of lists and strings instead of symbols. here are the helper-functions:
     one-of picks one element of the collection and returns a single-element collection containing it.
