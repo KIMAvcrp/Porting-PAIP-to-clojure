@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
 <meta name="title" content="Porting PAIP to clojure - Chapter 5: ELIZA - Dialog with a machine "/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-06-03T10:12+0200"/>
+<meta name="generated" content="2012-06-03T21:38+0200"/>
 <meta name="author" content="Maik Schünemann"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -110,6 +110,7 @@
 <ul>
 <li><a href="#sec-1">1 PAIP to clojure - Chapter 5: Eliza - Dialog with a machine</a></li>
 <li><a href="#sec-2">2 Description and specification of ELIZA</a></li>
+<li><a href="#sec-3">3 Segment Pattern Matching</a></li>
 </ul>
 </div>
 </div>
@@ -180,17 +181,18 @@ Transformation: (what yould it mean to you if you got a vacation ?)
 </p>
 
 
-<pre class="src src-clojure">(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">variable?</span> [x]
+<pre class="src src-clojure">(<span style="color: #b0c4de;">ns</span> PAIP2clojure.<span style="color: #b0c4de;">Chapter5</span>)
+
+(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">variable?</span> [x]
   (<span style="color: #b0c4de;">let</span> [x-str (<span style="color: #eedd82;">str</span> x)]
     (<span style="color: #b0c4de;">and</span> (<span style="color: #b0c4de;">.startsWith</span> x-str <span style="color: #ffa07a;">"?"</span>) (<span style="color: #eedd82;">&gt;</span> (<span style="color: #b0c4de;">.length</span> x-str) 1))))
 </pre>
 
 
-<pre class="example">
-=&gt; #'user/variable?
-</pre>
-
-<p>  I made a few changes to be able to use clojure's abstractions.
+<p>
+  ==&gt; #'PAIP2clojure.Chapter5/variable?
+===&gt; #'user/variable?
+=  I made a few changes to be able to use clojure's abstractions.
   This version works not only with symbols, like the common lisp version requires, it works with
   everything which can be converted to a string with the str method. So it doesn't matter if you are
   testing symbols read with the read function, or if you are testing a string.
@@ -203,13 +205,203 @@ Transformation: (what yould it mean to you if you got a vacation ?)
 <p>
   But how can the symbols be substituted when a match was succesful. It is great to have the functions pre- and
   postwalk-replace in the namespace clojure.walk, which substitutes elements in a tree given a substitution map.
+  (Norvig uses the common lisp equivalent sublis for this purpose wihch takes an associative list instead of
+  a real map).
 </p>
+<p>
+  The pat-match function will return an associative list, or a map in clojure, if it succeeded, if it failed,
+  it returns nil. This is a problem in common lisp because the empty list is nil in common lisp .
+  So there has to be a constant no-bindings which is '((t . t)). In clojure however that is not neccescary.
+</p>
+<p>
+  Also, the three helper functions get-binding binding-val and lookup aren't neccescary because clojure maps
+  are very convenient to use.
+  This means the clojure version can drop the following lines from the implementation:
+</p>
+
+
+<pre class="src src-common-lisp">(<span style="color: #00ffff;">defconstant</span> <span style="color: #eedd82;">fail</span> nil)
+(<span style="color: #00ffff;">defconstant</span> <span style="color: #eedd82;">no-bindings</span> '((t . t)))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">get-binding</span> (var bindings)
+  (assoc var bindings))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">binding-val</span> (binding)
+  (cdr binding))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">lookup</span> (var bindings)
+  (binding-val (get-binding var bindings)))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">extend-bindings</span> (var val bindings)
+  (cons (cons var bal) bindings))
+</pre>
+
+
+
+<pre class="src src-common-lisp">(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">pat-match</span> (pattern input <span style="color: #98fb98;">&amp;optional</span> (bindings no-bindings))
+<span style="color: #ffa07a;">"Match pattern against input in the context of the bindings"</span>
+(<span style="color: #00ffff;">cond</span> ((eq bindings fail) fail)
+      ((variable-p pattern)
+       (match-variable pattern input bindings))
+      ((eql pattern input) bindings)
+<span style="color: #ff7f24;">;      </span><span style="color: #ff7f24;">((segment-pattern-p pattern)                ; ***</span>
+<span style="color: #ff7f24;">;       </span><span style="color: #ff7f24;">(segment-match pattern input bindings))    ; ***</span>
+      ((and (consp pattern) (consp input)) 
+       (pat-match (rest pattern) (rest input)
+                  (pat-match (first pattern) (first input) 
+                             bindings)))
+      (t fail)))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">match-variable</span> (var input bindings)
+  (<span style="color: #00ffff;">let</span> ((binding (get-binding var bindings)))
+    (<span style="color: #00ffff;">cond</span> ((not binding) (extend-bindings var input bindings))
+          ((equal input (binding-val binding)) bindings)
+          (t fail))))
+
+
+</pre>
+
+<p>
+  This time, it is really a straightforward translation from common-lisp to clojure:
+</p>
+
+
+<pre class="src src-clojure">(<span style="color: #eedd82;">use</span> 'auto-declare.core)
+
+(with-auto-declare _
+(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">pat-match</span>
+  <span style="color: #ffa07a;">"Match pattern against input in the context of the bindings"</span>
+  ([pattern input] (pat-match pattern input {}))
+  ([pattern input bindings]
+     (<span style="color: #b0c4de;">cond</span> (<span style="color: #eedd82;">nil?</span> bindings) nil
+           (variable? pattern) (_match-variable pattern input bindings)
+           (<span style="color: #eedd82;">=</span> pattern input) bindings
+           (<span style="color: #b0c4de;">and</span> (<span style="color: #eedd82;">sequential?</span> pattern) (<span style="color: #eedd82;">sequential?</span> input))
+                (pat-match (<span style="color: #eedd82;">rest</span> pattern) (<span style="color: #eedd82;">rest</span> input)
+                       (pat-match (<span style="color: #eedd82;">first</span> pattern) (<span style="color: #eedd82;">first</span> input) bindings))
+           <span style="color: #7fffd4;">:else</span> nil)))
+
+(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">match-variable</span>
+  <span style="color: #ffa07a;">"Does var match input?"</span>
+  [var input bindings]
+  (<span style="color: #b0c4de;">let</span> [binding (<span style="color: #eedd82;">get</span> bindings var)]
+    (<span style="color: #b0c4de;">cond</span> (<span style="color: #eedd82;">not</span> binding) (<span style="color: #eedd82;">assoc</span> bindings var input)
+          (<span style="color: #eedd82;">=</span> input binding) bindings
+          <span style="color: #7fffd4;">:else</span> nil)))
+)
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter5/match-variable
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Segment Pattern Matching</h2>
+<div class="outline-text-2" id="text-3">
+
+<p>  For ELIZA, matching single elements is not enough. It must be able to match a sequence of items in the input.
+  These variables are called segment-variables and are represented by '(?* variable).
+  Segment patterns make the following possible:
+</p>
+
+
+
+<pre class="example">(pat-match '((?* ?p) need (?* ?x))
+           '(Mr Hulot and I need a vacation))
+((?P MR HULOT AND I) (?X A VACATION))
+</pre>
+
+
+<p>
+  First, we have to recognize and handle segment patterns in pat-match. This requires adding a new line:
+</p>
+
+
+<pre class="src src-clojure">(with-auto-declare _
+  (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">pat-match</span>
+   <span style="color: #ffa07a;">"Match pattern against input in the context of the bindings"</span>
+   ([pattern input] (pat-match pattern input {}))
+   ([pattern input bindings]
+      (<span style="color: #b0c4de;">cond</span> (<span style="color: #eedd82;">nil?</span> bindings) nil
+            (variable? pattern) (match-variable pattern input bindings)
+            (<span style="color: #eedd82;">=</span> pattern input) bindings
+            (_segment-pattern? pattern) (_segment-match pattern input bindings)
+            (<span style="color: #b0c4de;">and</span> (<span style="color: #eedd82;">sequential?</span> pattern) (<span style="color: #eedd82;">sequential?</span> input))
+                 (pat-match (<span style="color: #eedd82;">rest</span> pattern) (<span style="color: #eedd82;">rest</span> input)
+                        (pat-match (<span style="color: #eedd82;">first</span> pattern) (<span style="color: #eedd82;">first</span> input) bindings))
+            <span style="color: #7fffd4;">:else</span> nil)))
+
+  (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">segment-pattern?</span> [pattern]
+    (<span style="color: #b0c4de;">and</span> (<span style="color: #eedd82;">sequential?</span> pattern) (<span style="color: #b0c4de;">.startsWith</span> (<span style="color: #eedd82;">str</span> (<span style="color: #eedd82;">first</span> pattern)) <span style="color: #ffa07a;">"?*"</span>))))
+
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter5/segment-pattern?
+</pre>
+
+<p>  segment-match is more complicated than pat-match: How do wee know how much of the input it matches ?
+  One approach is to look where the matching input for the pattern after the segment pattern is and to
+  match everything up to this position. If this fails, then it is still possible that the segment-pattern
+  matches a longer subsequence, so we try again considering only longer matches.
+  This works, but rules out the possibility of a variable-pattern direct
+  after a segment pattern. This limitaion will be removed later.
+</p>
+
+
+<pre class="src src-common-lisp">(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">segment-match</span> (pattern input bindings <span style="color: #98fb98;">&amp;optional</span> (start 0))
+<span style="color: #ffa07a;">"Match the segment pattern ((?* var) . pat) against input."</span>
+(<span style="color: #00ffff;">let</span> ((var (second (first pattern)))
+      (pat (rest pattern)))
+  (<span style="color: #00ffff;">if</span> (null pat)
+      (match-variable var input bindings)
+      <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">We assume that pat starts with a constant</span>
+      <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">In other words, a pattern can't have 2 consecutive vars</span>
+      (<span style="color: #00ffff;">let</span> ((pos (position (first pat) input
+                           <span style="color: #b0c4de;">:start</span> start <span style="color: #b0c4de;">:test</span> #'equal)))
+        (<span style="color: #00ffff;">if</span> (null pos)
+            fail
+            (<span style="color: #00ffff;">let</span> ((b2 (pat-match pat (subseq input pos) bindings)))
+              <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">If this match failed, try another longer one</span>
+              <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">If it worked, check that the variables match</span>
+              (<span style="color: #00ffff;">if</span> (eq b2 fail)
+                  (segment-match pattern input bindings (+ pos 1))
+                  (match-variable var (subseq input 0 pos) b2))))))))
+</pre>
+
+
+<pre class="src src-clojure">    (with-auto-declare _
+      (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">segment-match</span>
+        <span style="color: #ffa07a;">"Match the segment pattern ((?* var) pat) against input."</span>
+        ([pattern input bindings] (segment-match pattern input bindings 0))
+        ([pattern input bindings start]
+           (<span style="color: #b0c4de;">let</span> [var (<span style="color: #b0c4de;">-&gt;</span> pattern first second)
+                 pat (<span style="color: #eedd82;">rest</span> pattern)]
+             (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">empty?</span> pat)
+               (match-variable var input bindings)
+<span style="color: #ff7f24;">;</span><span style="color: #ff7f24;">TODO implement this right need position and subsequence</span>
+               )))))
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter5/segment-match
+</pre>
+
+
 </div>
 </div>
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2012-06-03T10:12+0200</p>
+<p class="date">Date: 2012-06-03T21:38+0200</p>
 <p class="author">Author: Maik Schünemann</p>
 <p class="creator">Org version 7.8.09 with Emacs version 23</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

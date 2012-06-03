@@ -41,14 +41,17 @@
   #+end_src
   In clojure:
   #+begin_src clojure :exports both :results output :tangle yes
+    (ns PAIP2clojure.Chapter5)
+
     (defn variable? [x]
       (let [x-str (str x)]
         (and (.startsWith x-str "?") (> (.length x-str) 1))))
   #+end_src
 
   #+RESULTS:
-  : => #'user/variable?
-  I made a few changes to be able to use clojure's abstractions.
+==> #'PAIP2clojure.Chapter5/variable?
+===> #'user/variable?
+=  I made a few changes to be able to use clojure's abstractions.
   This version works not only with symbols, like the common lisp version requires, it works with
   everything which can be converted to a string with the str method. So it doesn't matter if you are
   testing symbols read with the read function, or if you are testing a string.
@@ -59,4 +62,160 @@
 
   But how can the symbols be substituted when a match was succesful. It is great to have the functions pre- and
   postwalk-replace in the namespace clojure.walk, which substitutes elements in a tree given a substitution map.
+  (Norvig uses the common lisp equivalent sublis for this purpose wihch takes an associative list instead of
+  a real map).
+
+  The pat-match function will return an associative list, or a map in clojure, if it succeeded, if it failed,
+  it returns nil. This is a problem in common lisp because the empty list is nil in common lisp .
+  So there has to be a constant no-bindings which is '((t . t)). In clojure however that is not neccescary.
+
+  Also, the three helper functions get-binding binding-val and lookup aren't neccescary because clojure maps
+  are very convenient to use.
+  This means the clojure version can drop the following lines from the implementation:
+  #+begin_src common-lisp 
+    (defconstant fail nil)
+    (defconstant no-bindings '((t . t)))
+    
+    (defun get-binding (var bindings)
+      (assoc var bindings))
+    
+    (defun binding-val (binding)
+      (cdr binding))
+    
+    (defun lookup (var bindings)
+      (binding-val (get-binding var bindings)))
+
+    (defun extend-bindings (var val bindings)
+      (cons (cons var bal) bindings))
+  #+end_src
+
+  #+begin_src common-lisp
+    (defun pat-match (pattern input &optional (bindings no-bindings))
+    "Match pattern against input in the context of the bindings"
+    (cond ((eq bindings fail) fail)
+          ((variable-p pattern)
+           (match-variable pattern input bindings))
+          ((eql pattern input) bindings)
+    ;      ((segment-pattern-p pattern)                ; ***
+    ;       (segment-match pattern input bindings))    ; ***
+          ((and (consp pattern) (consp input)) 
+           (pat-match (rest pattern) (rest input)
+                      (pat-match (first pattern) (first input) 
+                                 bindings)))
+          (t fail)))
+    
+    (defun match-variable (var input bindings)
+      (let ((binding (get-binding var bindings)))
+        (cond ((not binding) (extend-bindings var input bindings))
+              ((equal input (binding-val binding)) bindings)
+              (t fail))))
+    
+              
+  #+end_src
+  This time, it is really a straightforward translation from common-lisp to clojure:
+  #+begin_src clojure :exports both :results output :tangle yes
+    (use 'auto-declare.core)
+    
+    (with-auto-declare _
+    (defn pat-match
+      "Match pattern against input in the context of the bindings"
+      ([pattern input] (pat-match pattern input {}))
+      ([pattern input bindings]
+         (cond (nil? bindings) nil
+               (variable? pattern) (_match-variable pattern input bindings)
+               (= pattern input) bindings
+               (and (sequential? pattern) (sequential? input))
+                    (pat-match (rest pattern) (rest input)
+                           (pat-match (first pattern) (first input) bindings))
+               :else nil)))
+    
+    (defn match-variable
+      "Does var match input?"
+      [var input bindings]
+      (let [binding (get bindings var)]
+        (cond (not binding) (assoc bindings var input)
+              (= input binding) bindings
+              :else nil)))
+    )
+  #+end_src
+
+  #+RESULTS:
+  : => #'PAIP2clojure.Chapter5/match-variable
+
+* Segment Pattern Matching
+  For ELIZA, matching single elements is not enough. It must be able to match a sequence of items in the input.
+  These variables are called segment-variables and are represented by '(?* variable).
+  Segment patterns make the following possible:
+
+  #+begin_example
+  (pat-match '((?* ?p) need (?* ?x))
+             '(Mr Hulot and I need a vacation))
+  ((?P MR HULOT AND I) (?X A VACATION))
+  #+end_example
+
+  First, we have to recognize and handle segment patterns in pat-match. This requires adding a new line:
+  #+begin_src clojure :exports both :results output :tangle yes
+   (with-auto-declare _
+     (defn pat-match
+      "Match pattern against input in the context of the bindings"
+      ([pattern input] (pat-match pattern input {}))
+      ([pattern input bindings]
+         (cond (nil? bindings) nil
+               (variable? pattern) (match-variable pattern input bindings)
+               (= pattern input) bindings
+               (_segment-pattern? pattern) (_segment-match pattern input bindings)
+               (and (sequential? pattern) (sequential? input))
+                    (pat-match (rest pattern) (rest input)
+                           (pat-match (first pattern) (first input) bindings))
+               :else nil)))
+
+     (defn segment-pattern? [pattern]
+       (and (sequential? pattern) (.startsWith (str (first pattern)) "?*"))))
+
+  #+end_src
   
+  #+RESULTS:
+  : => #'PAIP2clojure.Chapter5/segment-pattern?
+  segment-match is more complicated than pat-match: How do wee know how much of the input it matches ?
+  One approach is to look where the matching input for the pattern after the segment pattern is and to
+  match everything up to this position. If this fails, then it is still possible that the segment-pattern
+  matches a longer subsequence, so we try again considering only longer matches.
+  This works, but rules out the possibility of a variable-pattern direct
+  after a segment pattern. This limitaion will be removed later.
+  #+begin_src common-lisp
+  (defun segment-match (pattern input bindings &optional (start 0))
+  "Match the segment pattern ((?* var) . pat) against input."
+  (let ((var (second (first pattern)))
+        (pat (rest pattern)))
+    (if (null pat)
+        (match-variable var input bindings)
+        ;; We assume that pat starts with a constant
+        ;; In other words, a pattern can't have 2 consecutive vars
+        (let ((pos (position (first pat) input
+                             :start start :test #'equal)))
+          (if (null pos)
+              fail
+              (let ((b2 (pat-match pat (subseq input pos) bindings)))
+                ;; If this match failed, try another longer one
+                ;; If it worked, check that the variables match
+                (if (eq b2 fail)
+                    (segment-match pattern input bindings (+ pos 1))
+                    (match-variable var (subseq input 0 pos) b2))))))))
+  #+end_src
+  #+begin_src clojure :exports both :results output :tangle yes
+    (with-auto-declare _
+      (defn segment-match
+        "Match the segment pattern ((?* var) pat) against input."
+        ([pattern input bindings] (segment-match pattern input bindings 0))
+        ([pattern input bindings start]
+           (let [var (-> pattern first second)
+                 pat (rest pattern)]
+             (if (empty? pat)
+               (match-variable var input bindings)
+;TODO implement this right need position and subsequence
+               )))))
+  #+end_src
+
+  #+RESULTS:
+  : => #'PAIP2clojure.Chapter5/segment-match
+
