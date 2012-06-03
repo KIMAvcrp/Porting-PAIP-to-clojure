@@ -3,11 +3,11 @@
                "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title>Porting PAIP to clojure - Chapter 4: GPS - Part 1</title>
+<title>b#+TITLE:Porting PAIP to clojure - Chapter 4: GPS - The General Problem Solver</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
-<meta name="title" content="Porting PAIP to clojure - Chapter 4: GPS - Part 1"/>
+<meta name="title" content="b#+TITLE:Porting PAIP to clojure - Chapter 4: GPS - The General Problem Solver"/>
 <meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2012-05-31T19:08+0200"/>
+<meta name="generated" content="2012-06-02T19:24+0200"/>
 <meta name="author" content="Maik Schünemann"/>
 <meta name="description" content=""/>
 <meta name="keywords" content=""/>
@@ -99,7 +99,7 @@
 </div>
 
 <div id="content">
-<h1 class="title">Porting PAIP to clojure - Chapter 4: GPS - Part 1</h1>
+<h1 class="title">b#+TITLE:Porting PAIP to clojure - Chapter 4: GPS - The General Problem Solver</h1>
 
 
 <hr/>
@@ -111,10 +111,12 @@
 <ul>
 <li><a href="#sec-1">1 PAIP to clojure - chapter 4</a>
 <ul>
-<li><a href="#sec-1-1">1.1 1. Description</a></li>
-<li><a href="#sec-1-2">1.2 2. Specification</a></li>
-<li><a href="#sec-1-3">1.3 3. Implementation</a></li>
+<li><a href="#sec-1-1">1.1 Description</a></li>
+<li><a href="#sec-1-2">1.2 Specification</a></li>
+<li><a href="#sec-1-3">1.3 Implementation</a></li>
 <li><a href="#sec-1-4">1.4 Testing</a></li>
+<li><a href="#sec-1-5">1.5 Analysis</a></li>
+<li><a href="#sec-1-6">1.6 Back to implementation - A more general version 2</a></li>
 </ul>
 </li>
 </ul>
@@ -125,8 +127,10 @@
 <h2 id="sec-1"><span class="section-number-2">1</span> PAIP to clojure - chapter 4</h2>
 <div class="outline-text-2" id="text-1">
 
-<p>  I continue to translate PAIP to clojure. This chapter covers the GPS program, the
-  General Problem Solver. As ever, the focus lies on the iterative process of developing
+<p>  I continue to translate PAIP to clojure.
+  As always, it is possible to follow the post even without reading PAIP, but I encourage you to do so.
+  This chapter covers the GPS program, the
+  General Problem Solver. As always, the focus lies on the iterative process of developing
   an (ai-) progam. Norvig presents 5 stages of an programming project, after which the
   sections of the chapter are numbered:
 </p><ol>
@@ -142,72 +146,72 @@
 </li>
 </ol>
 
-<p>  In this post, I will describe the first four steps, from an idea to the first running program. The analysis 
-  and refinement of the program will be covered in part 2.
-</p>
+
+
 </div>
 
 <div id="outline-container-1-1" class="outline-3">
-<h3 id="sec-1-1"><span class="section-number-3">1.1</span> 1. Description</h3>
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Description</h3>
 <div class="outline-text-3" id="text-1-1">
 
-<p>   GPS was the first program, which separated its problem-solving strategy from its knowledge of particular
-   problems. As problem-solving strategy it used <a href="http://en.wikipedia.org/wiki/Means-ends_analysis">means-ends analysis</a>. In means-ends analysis you know in what
-   state you are right now and in what state you will be when you have solved your problem. The focus lies
-   on what is between your state now and the goal-state and how this distance can be overcome.
+<p>   GPS was the first program which separated its problem-solving strategy from its knowledge of particular
+   problems. It used <a href="http://en.wikipedia.org/wiki/Means-ends_analysis">means-ends analysis</a> as problem-solving strategy. In means-ends analysis, you know in what
+   state you are right now and in what state you will be when you have solved your problem, but you consider
+   what is between your state now and the goal-state and how this distance can be overcome.
    An Example:
-   I have to write an email. What Do I need to do to write an-email ? I have to type. What do I need to type?
-   I have to sit in front of my pc ? What do I need to do to sit in front of my pc ? Go to the PC &hellip;.
+   I have to write a blog-post. What Do I need to do to write an blog-post? I have to type it.
+   What do I need to type it? I have to sit in front of my pc.
+   What do I need to do to sit in front of my pc ? Go to the PC &hellip;.
 </p>
 <p>
    It is obvious that we have to be able to answer "What do I need to  &hellip; "or, like the book points out "What is the
    difference between&hellip;" from the set of all possible actions. And each actions could have itself preconditions,
-   for  which actions have to be taken befor this action can be taken.
+   for  which actions have to be taken befor it can be taken.
    This is a very brief description, I encourage you to read the section in PAIP for the full discussion.
 </p></div>
 
 </div>
 
 <div id="outline-container-1-2" class="outline-3">
-<h3 id="sec-1-2"><span class="section-number-3">1.2</span> 2. Specification</h3>
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Specification</h3>
 <div class="outline-text-3" id="text-1-2">
 
-<p>   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification.
+<p>   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: specification.
    In this stage, we refine the description to something that is representible in the implementation language.
-   This also gives the starting point for the implementation,greatly influencing the design part.
-   I tink the stage of Specification is best described with:
+   I tink, the stage of specification is best described as follows:
    Find the most natural mapping between the problem and the implementation language!
-   So let's see how means-ends analysis can be represented in clojure:
+</p>
+<p>
+   So, let's see how means-ends analysis can be represented in clojure:
 </p><ul>
-<li>A state can be represented as a set of conditions, so as #{unknown poor} and #{rich famous}. We need 2 states:
-     the current state and the goal state (which of the two above is the goal-state&hellip;?)
+<li>A state can be represented as a set of conditions, for example #{unknown poor} and #{rich famous}. We need 2 states:
+     the current state and the goal state (try to guess which of the two above is the goal-state&hellip;?)
 </li>
-<li>The allowable actions can naturally be represented as a collection of actions, which can be worked in 
-      order to find the first, that is applicable
+<li>The allowable actions can naturally be represented as a collection of actions, which can be worke
 </li>
-<li>An  needs a Name, a descriptions of what states a person has to be in in order to take the action and
-      a description what states of the person will change after taking the action. 
-      An action can therefor be described by a map (or later by a record) with a :action and a :precond field. 
-      The changes of the state of the acting person are trickier. Consider an action "Become rich" has as precond
+<li>An action needs a Name, a descriptions of what states a person has to be in in order to take the action and
+      a description of what states of the person will change after taking the action. 
+      An action can therefore be described by a map (or later by a record) with a :action and a :precond field. 
+      The changes of the state of the acting person are trickier. Consider an action "Become rich" that has as precond
       being poor and changes that to being rich. It could also remove states or add new ones. The change of one 
       state to the other can easily be represented in terms of removing the old one and adding the new one.
       Thus the Action will have two more fields, a :del-list and a :add-list which contains states which will 
-      be added or removed from the person who takes the action.
+      be added or removed from the current state after taking the action.
 </li>
 <li>Last, but not least, we have to specify the entry point of the application, the GPS-function.
-      We need a start-state, a goal-state and the allowed actions. Thus it can be represented as a function which
-      takes a start-state and a goal states, and works with the <b>ops</b> variable.
+      We need a start-state, a goal-state and the allowed actions. It can be represented as a function which
+      takes a start-state and a goal states, and works with the <b>ops</b> var.
 </li>
 </ul>
 
 
 <p>   
   Now we have specified the single entities of the program. The algorithm is next to go:
-  GPS succeeds if it can achieve all single conditions in the goal state by applying a sequence of actions.
-  To decide wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
-  add-list the action is appropriate and GPS wants to take the action. It can take the action if it can achieve
+  GPS succeeds, if it can achieve all single conditions in the goal state by applying a sequence of actions.
+  To decide, wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
+  add-list, the action is appropriate and GPS wants to take the action. It can only take the action, if it can achieve
   all preconds of the action, which is just calling itself with the preconds as goal-state, updating the current
-  state as it goes along. If was able to achieve every condition of the goal state, it succeedes
+  state as it goes along. If it was able to achieve every condition of the goal state, it succeedes
   (Note that this is the first, most simplest specification, it will be refined in part 2).
   Ok, this is enough for the first implementation of the program!
 </p></div>
@@ -215,11 +219,11 @@
 </div>
 
 <div id="outline-container-1-3" class="outline-3">
-<h3 id="sec-1-3"><span class="section-number-3">1.3</span> 3. Implementation</h3>
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> Implementation</h3>
 <div class="outline-text-3" id="text-1-3">
 
-<p>     First, here is a sample operations list. It becomes easier for me to implement, when I see the data my code
-     works with:
+<p>     First, let's have a look at a sample operations list. I find it easier to implement the program, if I see
+     with what data it works with:
 </p>
 
 
@@ -257,29 +261,29 @@
 
 <p>
   In the implementation, I choose not follow Norvigs route and
-  modify the current state in the function. Instead I changed the implementation
-  to be side-effect free and hence more ideomatic clojure.
+  modify the current state in the function, which would require something like an atom or agent in clojure.
+  Instead I changed the implementation to be side-effect free and hence more ideomatic clojure.
   Here is the implementation from the book:
 </p>
 
 
-<pre class="src src-clojure">(<span style="color: #00ffff;">defvar</span> <span style="color: #87cefa;">*state*</span> nil <span style="color: #ffa07a;">"The current state: a list of conditions."</span>)
+<pre class="src src-common-lisp">(<span style="color: #00ffff;">defvar</span> <span style="color: #eedd82;">*state*</span> nil <span style="color: #ffa07a;">"The current state: a list of conditions."</span>)
 
-(<span style="color: #00ffff;">defvar</span> <span style="color: #87cefa;">*ops*</span> nil <span style="color: #ffa07a;">"A list of available operators."</span>)
+(<span style="color: #00ffff;">defvar</span> <span style="color: #eedd82;">*ops*</span> nil <span style="color: #ffa07a;">"A list of available operators."</span>)
 
-(<span style="color: #00ffff;">defstruct</span> <span style="color: #87cefa;">op</span> <span style="color: #ffa07a;">"An operation"</span>
+(<span style="color: #00ffff;">defstruct</span> <span style="color: #98fb98;">op</span> <span style="color: #ffa07a;">"An operation"</span>
   (action nil) (preconds nil) (add-list nil) (del-list nil))
 
-(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">GPS</span> (<span style="color: #98fb98;">*state*</span> goals *ops*)
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">GPS</span> (*state* goals *ops*)
   <span style="color: #ffa07a;">"General Problem Solver: achieve all goals using *ops*."</span>
-  (<span style="color: #b0c4de;">if</span> (every #'achieve goals) 'solved))
+  (<span style="color: #00ffff;">if</span> (every #'achieve goals) 'solved))
 
 (<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">achieve</span> (goal)
   <span style="color: #ffa07a;">"A goal is achieved if it already holds,</span>
 <span style="color: #ffa07a;">  or if there is an appropriate op for it that is applicable."</span>
-  (<span style="color: #b0c4de;">or</span> (member goal *state*)
-      (<span style="color: #eedd82;">some</span> #'apply-op 
-            (find-all goal *ops* <span style="color: #7fffd4;">:test</span> #'appropriate-p))))
+  (or (member goal *state*)
+      (some #'apply-op 
+            (find-all goal *ops* <span style="color: #b0c4de;">:test</span> #'appropriate-p))))
 
 (<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">appropriate-p</span> (goal op)
   <span style="color: #ffa07a;">"An op is appropriate to a goal if it is in its add list."</span>
@@ -287,10 +291,10 @@
 
 (<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">apply-op</span> (op)
   <span style="color: #ffa07a;">"Print a message and update *state* if op is applicable."</span>
-  (<span style="color: #b0c4de;">when</span> (every #'achieve (op-preconds op))
-    (<span style="color: #eedd82;">print</span> (<span style="color: #eedd82;">list</span> 'executing (op-action op)))
+  (<span style="color: #00ffff;">when</span> (every #'achieve (op-preconds op))
+    (print (list 'executing (op-action op)))
     (setf *state* (set-difference *state* (op-del-list op)))
-    (setf *state* (<span style="color: #98fb98;">union</span> *state* (op-add-list op)))
+    (setf *state* (union *state* (op-add-list op)))
     t))
 </pre>
 
@@ -303,44 +307,44 @@
 </p>
 <p>
   Notice the use of the with-auto-declare macro which I described in a previous post. This let me avoid
-  to add a declare binding everytime I make a forward declaration. If a symbol starts with D!-, a forward-declaration
+  to add a declare binding everytime I make a forward declaration. If a symbol starts with _, a forward-declaration
   will be automagically added for it.
 </p>
 
 
-<pre class="src src-clojure">(with-auto-declare
- (<span style="color: #eedd82;">use</span> 'clojure.set)
+<pre class="src src-clojure"> (<span style="color: #eedd82;">use</span> 'clojure.set)
  (<span style="color: #eedd82;">use</span> 'auto-declare.core)
 
- (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">GPS</span> [state goals]
-   (<span style="color: #b0c4de;">let</span> [new-state (D!-every-accum? D!-achieve state goals)]
-     (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-state)
-       'not-solved
-       'solved)))
+(with-auto-declare _  
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">GPS</span> [state goals]
+     (<span style="color: #b0c4de;">let</span> [new-state (_every-accum? _achieve state goals)]
+       (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-state)
+         'not-solved
+         'solved)))
 
- (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">achieve</span>
-   <span style="color: #ffa07a;">"return the new-state after the goal is achieved or nil</span>
-<span style="color: #ffa07a;">    if it could not be archieved"</span>
-   [current-state goal]
-   (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">contains?</span> current-state goal)
-     current-state
-      (<span style="color: #eedd82;">some</span> (<span style="color: #eedd82;">partial</span> D!-apply-op current-state)
-        (<span style="color: #eedd82;">filter</span> #(D!-appropriate? goal %) *ops*))))
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">achieve</span>
+     <span style="color: #ffa07a;">"return the new-state after the goal is achieved or nil</span>
+<span style="color: #ffa07a;">      if it could not be archieved"</span>
+     [current-state goal]
+     (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">contains?</span> current-state goal)
+       current-state
+        (<span style="color: #eedd82;">some</span> (<span style="color: #eedd82;">partial</span> _apply-op current-state)
+          (<span style="color: #eedd82;">filter</span> #(_appropriate? goal %) *ops*))))
 
- (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">appropriate?</span> [goal op]
-   (<span style="color: #eedd82;">contains?</span> (<span style="color: #7fffd4;">:add-list</span> op) goal))
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">appropriate?</span> [goal op]
+     (<span style="color: #eedd82;">contains?</span> (<span style="color: #7fffd4;">:add-list</span> op) goal))
 
- (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">every-accum?</span> [func start coll]
-   (<span style="color: #eedd82;">reduce</span> #(<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> %1)
-              nil
-              (func %1 %2)) start coll))
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">every-accum?</span> [func start coll]
+     (<span style="color: #eedd82;">reduce</span> #(<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> %1)
+                nil
+                (func %1 %2)) start coll))
 
- (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">apply-op</span> [current-state op]
-   (<span style="color: #b0c4de;">let</span> [new-current-state (every-accum? achieve current-state (<span style="color: #7fffd4;">:preconds</span> op))]
-     (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-current-state)
-       nil
-       (<span style="color: #b0c4de;">do</span> (<span style="color: #eedd82;">println</span> (<span style="color: #eedd82;">str</span> <span style="color: #ffa07a;">"executing "</span> (<span style="color: #7fffd4;">:action</span> op)))
-           (<span style="color: #b0c4de;">-&gt;</span> new-current-state (<span style="color: #98fb98;">difference</span> (<span style="color: #7fffd4;">:del-list</span> op)) (<span style="color: #98fb98;">union</span> (<span style="color: #7fffd4;">:add-list</span> op))))))))
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">apply-op</span> [current-state op]
+     (<span style="color: #b0c4de;">let</span> [new-current-state (every-accum? achieve current-state (<span style="color: #7fffd4;">:preconds</span> op))]
+       (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-current-state)
+         nil
+         (<span style="color: #b0c4de;">do</span> (<span style="color: #eedd82;">println</span> (<span style="color: #eedd82;">str</span> <span style="color: #ffa07a;">"executing "</span> (<span style="color: #7fffd4;">:action</span> op)))
+             (<span style="color: #b0c4de;">-&gt;</span> new-current-state (<span style="color: #98fb98;">difference</span> (<span style="color: #7fffd4;">:del-list</span> op)) (<span style="color: #98fb98;">union</span> (<span style="color: #7fffd4;">:add-list</span> op))))))))
 </pre>
 
 <pre class="example">
@@ -484,12 +488,336 @@ limitations f it.
 So stay tuned for part 2.
 As always, comments/advices etc are welcome.
 </p></div>
+
+</div>
+
+<div id="outline-container-1-5" class="outline-3">
+<h3 id="sec-1-5"><span class="section-number-3">1.5</span> Analysis</h3>
+<div class="outline-text-3" id="text-1-5">
+
+<p>   It turns out, that the GPS is not very general, at least our implementation is not.
+   Norvig does a great analysis explaining the reasons why the program can not handle many situations.
+   I will give a short summary of the discussion, describing the problems and a miminal explanation why the program fails.
+</p><ul>
+<li>Running around the block - GPS don't have any notion of actions, that add nothing to the :add-list, like
+     'running-around-the-block'. There has to be a state like "got-some-exercise" in the :add-list
+</li>
+<li>Clobbered Sibling Goal - In the current implementation, GPS solves every goal independent and in sequence.
+     That means, if solving the second problem undoes a previous goal, GPS will falsly return success.
+     In the school-ops world, consider #{have-money son-at-school}.
+     The program has to be modified, so that it checks after achieving all goals that the state is still a subset 
+     of the goal-state
+</li>
+<li>Leaping before you look - sometimes, gps will fail, but executes some action before it recognizes that.
+     In the current implementation, planning and execution are interleaved. This will be addressent by returning
+     the list of actions instead of just printing the actions.
+</li>
+<li>Recursive Subgoal Problem - suppose we would add another operator to the school-ops "ask-phone-number" with
+     the precondition of being in communication with the shop. GPS will try to achieve know-phone-number with 
+     ask-phone-number, which requires to be in communication with the shop, which requires knowing the phone-number
+     &hellip; It tries to solve the problem in terms of itself. To address this, we have to add a goal-stack, and let
+     GPS give-up if it recognizes a circle.
+</li>
+<li>Lack of Intermediate Information - As at the leaping before you look problem, it is better to return a list
+     of actions instead of just solved. This makes it easier for other parts of the program to interact with GPS
+</li>
+</ul>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-1-6" class="outline-3">
+<h3 id="sec-1-6"><span class="section-number-3">1.6</span> Back to implementation - A more general version 2</h3>
+<div class="outline-text-3" id="text-1-6">
+
+<p>   Before we come to the implementation of the program, it helps to get a good debugging tool, so that we can
+   see what it is doing:
+</p>
+
+
+<pre class="src src-clojure">(<span style="color: #00ffff;">def</span> <span style="color: #7fffd4;">^:dynamic</span> <span style="color: #87cefa;">*dbg-ids*</span>)
+(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">debug</span>
+  ([id str] (debug id 0 str))
+  ([id indent str]
+   (<span style="color: #b0c4de;">when</span> (<span style="color: #eedd82;">contains?</span> *dbg-ids* id)
+    (<span style="color: #b0c4de;">do</span> (<span style="color: #b0c4de;">dotimes</span> [i indent]
+          (<span style="color: #eedd82;">print</span> <span style="color: #ffa07a;">" "</span>))
+        (<span style="color: #eedd82;">println</span> str)))))
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter4/debug
+</pre>
+
+
+<p>
+   Here is the common-lisp code. It first transforms all the ops to a new form, which has an '(Executing action)
+   in its add list.
+</p>
+
+
+<pre class="src src-common-lisp">   (<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">executing-p</span> (x)
+  <span style="color: #ffa07a;">"Is x of the form: (executing ...) ?"</span>
+  (starts-with x 'executing))
+
+  (<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">starts-with</span> (list x)
+    <span style="color: #ffa07a;">"Is this a list whose first element is x?"</span>
+    (and (consp list) (eql (first list) x)))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">convert-op</span> (op)
+  <span style="color: #ffa07a;">"Make op conform to the (EXECUTING op) convention."</span>
+  (<span style="color: #00ffff;">unless</span> (some #'executing-p (op-add-list op))
+    (push (list 'executing (op-action op)) (op-add-list op)))
+  op)
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">op</span> (action <span style="color: #98fb98;">&amp;key</span> preconds add-list del-list)
+  <span style="color: #ffa07a;">"Make a new operator that obeys the (EXECUTING op) convention."</span>
+  (convert-op
+    (make-op <span style="color: #b0c4de;">:action</span> action <span style="color: #b0c4de;">:preconds</span> preconds
+             <span style="color: #b0c4de;">:add-list</span> add-list <span style="color: #b0c4de;">:del-list</span> del-list)))
+
+<span style="color: #ff7f24;">;;; </span><span style="color: #ff7f24;">==============================</span>
+
+(mapc #'convert-op *school-ops*)
+
+</pre>
+
+<p>
+   The new version of GPS will return the new state instead of printing the actions and removes all non-atoms from
+   the state so that only (Executing action) forms are left
+</p>
+
+
+
+<pre class="src src-common-lisp">  (<span style="color: #00ffff;">defvar</span> <span style="color: #eedd82;">*ops*</span> nil <span style="color: #ffa07a;">"A list of available operators."</span>)
+
+(<span style="color: #00ffff;">defstruct</span> <span style="color: #98fb98;">op</span> <span style="color: #ffa07a;">"An operation"</span>
+  (action nil) (preconds nil) (add-list nil) (del-list nil))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">GPS</span> (state goals <span style="color: #98fb98;">&amp;optional</span> (*ops* *ops*))
+  <span style="color: #ffa07a;">"General Problem Solver: from state, achieve goals using *ops*."</span>
+  (remove-if #'atom (achieve-all (cons '(start) state) goals nil)))
+
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">achieve-all</span> (state goals goal-stack)
+  <span style="color: #ffa07a;">"Achieve each goal, and make sure they still hold at the end."</span>
+  (<span style="color: #00ffff;">let</span> ((current-state state))
+    (<span style="color: #00ffff;">if</span> (and (every #'(<span style="color: #00ffff;">lambda</span> (g)
+                        (setf current-state
+                              (achieve current-state g goal-stack)))
+                    goals)
+             (subsetp goals current-state <span style="color: #b0c4de;">:test</span> #'equal))
+        current-state)))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">achieve</span> (state goal goal-stack)
+  <span style="color: #ffa07a;">"A goal is achieved if it already holds,</span>
+<span style="color: #ffa07a;">  or if there is an appropriate op for it that is applicable."</span>
+  (dbg-indent <span style="color: #b0c4de;">:gps</span> (length goal-stack) <span style="color: #ffa07a;">"Goal: ~a"</span> goal)
+  (<span style="color: #00ffff;">cond</span> ((member-equal goal state) state)
+        ((member-equal goal goal-stack) nil)
+        (t (some #'(<span style="color: #00ffff;">lambda</span> (op) (apply-op state goal op goal-stack))
+                 (find-all goal *ops* <span style="color: #b0c4de;">:test</span> #'appropriate-p)))))
+
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">member-equal</span> (item list)
+  (member item list <span style="color: #b0c4de;">:test</span> #'equal))
+
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">apply-op</span> (state goal op goal-stack)
+  <span style="color: #ffa07a;">"Return a new, transformed state if op is applicable."</span>
+  (dbg-indent <span style="color: #b0c4de;">:gps</span> (length goal-stack) <span style="color: #ffa07a;">"Consider: ~a"</span> (op-action op))
+  (<span style="color: #00ffff;">let</span> ((state2 (achieve-all state (op-preconds op) 
+                             (cons goal goal-stack))))
+    (<span style="color: #00ffff;">unless</span> (null state2)
+      <span style="color: #ff7f24;">;; </span><span style="color: #ff7f24;">Return an updated state</span>
+      (dbg-indent <span style="color: #b0c4de;">:gps</span> (length goal-stack) <span style="color: #ffa07a;">"Action: ~a"</span> (op-action op))
+      (append (remove-if #'(<span style="color: #00ffff;">lambda</span> (x) 
+                             (member-equal x (op-del-list op)))
+                         state2)
+              (op-add-list op)))))
+
+(<span style="color: #00ffff;">defun</span> <span style="color: #87cefa;">appropriate-p</span> (goal op)
+  <span style="color: #ffa07a;">"An op is appropriate to a goal if it is in its add list."</span>
+  (member-equal goal (op-add-list op)))
+</pre>
+
+
+<p>
+  The function achieve-all abstracts away the (every #'achieve &hellip;) from the first version and checks whether
+  the resulting state is still a subset of the goal-state. Also, it updates the current state for each application
+  of achieve (destructively modifying..)
+</p>
+<p>
+  Also note, that in apply-op append and remove-if are used. They are needed because in this version, the order
+  of the conditions in the current state counts (because they contain (Executing action) elements.
+</p>
+<p>
+  Again, I will not follow the implementation given in PAIP. Especially I want to avoid the side-effects in
+  achieve-all and the mixing of actual conditions and (Executing action) forms, which would prevent to represent
+  states with sets. It turned out, that I needed only three small changes from the first version of the program:
+</p>
+<ul>
+<li>The state is now divided in the current-state and a list-of-actions taken so far. Thanks to clojure's destructuring,
+    it is easy to take the state apart again.
+</li>
+<li>there is a goal-stack which contains all goals tried so far. achieve gives up if it encounters a goal that is 
+    in the goal-stack to avoid stack-overflow-errors.
+</li>
+<li>every-time an action is executed, it is appendet to the list-of-actions.
+</li>
+</ul>
+
+
+
+
+
+<pre class="src src-clojure"> (<span style="color: #eedd82;">use</span> 'clojure.set)
+ (<span style="color: #eedd82;">use</span> 'auto-declare.core)
+
+(with-auto-declare _  
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">GPS</span> [state goals]
+     (<span style="color: #b0c4de;">let</span> [[new-state list-of-actions] (_every-accum? (<span style="color: #eedd82;">partial</span> achieve []) [state []] goals)]
+       (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-state)
+         nil
+         list-of-actions)))
+
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">achieve</span>
+     <span style="color: #ffa07a;">"return the new-state after the goal is achieved or nil</span>
+<span style="color: #ffa07a;">      if it could not be archieved"</span>
+     [goal-stack [current-state list-of-actions] goal]
+     (debug <span style="color: #7fffd4;">:gps</span> (<span style="color: #eedd82;">count</span> goal-stack) (<span style="color: #eedd82;">str</span> <span style="color: #ffa07a;">"Goal "</span> goal))
+     (<span style="color: #b0c4de;">cond</span> (<span style="color: #eedd82;">contains?</span> current-state goal) [current-state list-of-actions]
+           (<span style="color: #eedd82;">contains?</span> goal-stack goal) [nil list-of-actions]
+           <span style="color: #7fffd4;">:else</span> (<span style="color: #eedd82;">some</span> (<span style="color: #eedd82;">partial</span> _apply-op goal-stack goal [current-state list-of-actions])
+                       (<span style="color: #eedd82;">filter</span> #(_appropriate? goal %) *ops*))))
+
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">appropriate?</span> [goal op]
+     (<span style="color: #eedd82;">contains?</span> (<span style="color: #7fffd4;">:add-list</span> op) goal))
+
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">every-accum?</span> [func start coll]
+     (<span style="color: #eedd82;">reduce</span> #(<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> %1)
+                nil
+                (func %1 %2)) start coll))
+
+   (<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">apply-op</span> [goal-stack goal state op]
+     (debug <span style="color: #7fffd4;">:gps</span> (<span style="color: #eedd82;">count</span> goal-stack) (<span style="color: #eedd82;">str</span> <span style="color: #ffa07a;">"Consider: "</span> (<span style="color: #7fffd4;">:action</span> op)))
+     (<span style="color: #b0c4de;">let</span> [[new-current-state new-list-of-actions](every-accum? (<span style="color: #eedd82;">partial</span> achieve (<span style="color: #eedd82;">conj</span> goal-stack goal))
+                                                                state (<span style="color: #7fffd4;">:preconds</span> op))]
+       (<span style="color: #b0c4de;">if</span> (<span style="color: #eedd82;">nil?</span> new-current-state)
+         [nil new-list-of-actions]
+         (<span style="color: #b0c4de;">do</span> (debug <span style="color: #7fffd4;">:gps</span> (<span style="color: #eedd82;">count</span> goal-stack) (<span style="color: #eedd82;">str</span> <span style="color: #ffa07a;">"Action "</span> (<span style="color: #7fffd4;">:action</span> op)))
+             [(<span style="color: #b0c4de;">-&gt;</span> new-current-state (<span style="color: #98fb98;">difference</span> (<span style="color: #7fffd4;">:del-list</span> op)) (<span style="color: #98fb98;">union</span> (<span style="color: #7fffd4;">:add-list</span> op)))
+              (<span style="color: #eedd82;">conj</span> new-list-of-actions (<span style="color: #7fffd4;">:action</span> op))])))))
+
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter4/apply-op
+</pre>
+
+
+<p>
+  This implementation solves the problems mentioned above.
+  The next parts of Chapter 4 show how the program performs in new domains. Feel free to port the
+  ops in these domains to clojure and report whether the program worked or not.
+  Here is one example domain: monkey and bananas:
+</p>
+
+
+<pre class="src src-clojure">  (<span style="color: #00ffff;">def</span> <span style="color: #7fffd4;">^:dynamic</span> <span style="color: #87cefa;">*banana-ops*</span>
+  [{<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"climb-on-chair"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"chair-at-middle-room"</span> <span style="color: #ffa07a;">"at-middle-room"</span> <span style="color: #ffa07a;">"on-floor"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"at-bananas"</span> <span style="color: #ffa07a;">"on-chair"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"at-middle-room"</span> <span style="color: #ffa07a;">"on-floor"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"push-chair-from-door-to-middle-room"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"chair-at-door"</span> <span style="color: #ffa07a;">"at-door"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"chair-at-middle-room"</span> <span style="color: #ffa07a;">"at-middle-room"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"chair-at-door"</span> <span style="color: #ffa07a;">"at-middle-room"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"walk-from-door-to-middle-room"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"at-door"</span> <span style="color: #ffa07a;">"on-floor"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"at-middle-room"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"at-door"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"grasp-bananas"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"at-bananas"</span> <span style="color: #ffa07a;">"empty-handed"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"has-bananas"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"at-door"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"drop-ball"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"has-ball"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"empty-handed"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"has-ball"</span>}}
+   {<span style="color: #7fffd4;">:action</span> <span style="color: #ffa07a;">"eat-bananas"</span>
+    <span style="color: #7fffd4;">:preconds</span> #{<span style="color: #ffa07a;">"has-bananas"</span>}
+    <span style="color: #7fffd4;">:add-list</span> #{<span style="color: #ffa07a;">"empty-handed"</span> <span style="color: #ffa07a;">"not-hungry"</span>}
+    <span style="color: #7fffd4;">:del-list</span> #{<span style="color: #ffa07a;">"has-bananas"</span> <span style="color: #ffa07a;">"hungry"</span>}}])
+
+(<span style="color: #00ffff;">def</span> <span style="color: #7fffd4;">^:dynamic</span> <span style="color: #87cefa;">*ops*</span> *banana-ops*)
+</pre>
+
+
+<pre class="example">
+=&gt; #'PAIP2clojure.Chapter4/*ops*
+</pre>
+
+
+
+
+
+<pre class="src src-clojure">(<span style="color: #b0c4de;">binding</span> [*dbg-ids* #{<span style="color: #7fffd4;">:gps</span> }]
+  (GPS #{<span style="color: #ffa07a;">"at-door"</span> <span style="color: #ffa07a;">"on-floor"</span> <span style="color: #ffa07a;">"has-ball"</span> <span style="color: #ffa07a;">"hungry"</span> <span style="color: #ffa07a;">"chair-at-door"</span>}
+       #{<span style="color: #ffa07a;">"not-hungry"</span>}))
+</pre>
+
+
+<pre class="example">
+ Goal not-hungry
+ Consider: eat-bananas
+  Goal has-bananas
+  Consider: grasp-bananas
+   Goal empty-handed
+   Consider: drop-ball
+    Goal has-ball
+   Action drop-ball
+   Goal at-bananas
+   Consider: climb-on-chair
+    Goal chair-at-middle-room
+    Consider: push-chair-from-door-to-middle-room
+     Goal chair-at-door
+     Goal at-door
+    Action push-chair-from-door-to-middle-room
+    Goal at-middle-room
+    Goal on-floor
+   Action climb-on-chair
+  Action grasp-bananas
+ Action eat-bananas
+=&gt; ["drop-ball" "push-chair-from-door-to-middle-room" "climb-on-chair" "grasp-bananas" "eat-bananas"]
+</pre>
+
+
+
+<p>
+  The Chapter in PAIP ends with a discussion of how general the gps really is. It turns out that it has severe
+  limitations and I encourage everyone to read the sections in the book. Many of this issues will be addressed
+  in later chapters using more sophisticated techniques like full-fledged search and backtracking, like
+  prolog does.
+</p>
+<p>
+  Puh, that was more work than I thought. But I hope that I managed to translate it to ideomatic clojure which is not
+  to hard to follow.
+  Feel free to comment, if you have questions, anything is not clear, you enounter bugs or have some other advice.
+</p>
+<p>
+  Chapter 5 is next to come. It contains an implementation of the ELIZA program.
+</p></div>
 </div>
 </div>
 </div>
 
 <div id="postamble">
-<p class="date">Date: 2012-05-31T19:08+0200</p>
+<p class="date">Date: 2012-06-02T19:24+0200</p>
 <p class="author">Author: Maik Schünemann</p>
 <p class="creator">Org version 7.8.09 with Emacs version 23</p>
 <a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>

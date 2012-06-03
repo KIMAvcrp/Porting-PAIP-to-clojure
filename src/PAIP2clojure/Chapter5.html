@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Porting PAIP to clojure - Chapter 5: ELIZA - Dialog with a machine </title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="title" content="Porting PAIP to clojure - Chapter 5: ELIZA - Dialog with a machine "/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2012-06-03T10:12+0200"/>
+<meta name="author" content="Maik Schünemann"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  div.inlinetask {
+    padding:10px;
+    border:2px solid gray;
+    margin:10px;
+    background: #ffffcc;
+  }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style><style type="text/css">pre {
+    border: 1pt solid #AEBDCC;
+	color:white;
+ background-color: #000000;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  } </style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+
+<div id="preamble">
+
+</div>
+
+<div id="content">
+<h1 class="title">Porting PAIP to clojure - Chapter 5: ELIZA - Dialog with a machine </h1>
+
+
+<hr/>
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 PAIP to clojure - Chapter 5: Eliza - Dialog with a machine</a></li>
+<li><a href="#sec-2">2 Description and specification of ELIZA</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> PAIP to clojure - Chapter 5: Eliza - Dialog with a machine</h2>
+<div class="outline-text-2" id="text-1">
+
+<p>  This chapter contains an implementation of the program called ELIZA which could, given appropriate rules,
+  emulate an Rogerian psychoanalyst.
+  You can try ELIZA if you are using emacs by hitting M-x doctor and start telling about your problems.
+</p>
+<p>
+  Although ELIZA seems to be very sophisticated being able to emulate humans (in a very restricted area),
+  It consists merely of a pattern matching tool and a set of rules, which allows it to transform the
+  input to output.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> Description and specification of ELIZA</h2>
+<div class="outline-text-2" id="text-2">
+
+<p>  This is the ELIZA algorithm:
+</p><ol>
+<li>Read an input
+</li>
+<li>Find a pattern that matches the input
+</li>
+<li>Transform the input into a response
+</li>
+<li>Print the response
+</li>
+</ol>
+
+<p>  Norvig follows the route of least resistance and uses lisp's built in capabilities to read lisp code and
+  print it. This is a good showcase of how good lisp is for quick prototyping.
+  Half of the problems are thus trivial, the hard part comes with 2. and 3.
+  We need a representation of an general pattern and input, responses to the pattern and the transformation
+  of the input according to the rules for the pattern it matches.
+  Here is an example:
+</p>
+
+
+<pre class="src src-quoted">Pattern: (I need a X)
+Response: (what would it mean to you if you got a X ?)
+
+Input: (I need a vacation)
+Transformation: (what yould it mean to you if you got a vacation ?)
+</pre>
+
+
+<p>
+  The pattern matches must match normal atoms with itself, but it has to recognize a variable like X.
+  In PAIP, variables are starting with an ?
+</p>
+
+
+<pre class="src src-common">(defun variable-p (x)
+<span style="color: #ffa07a;">"Is x a variable (a symbol beginning with `?')?"</span>
+(and (symbolp x) (equal (elt (symbol-name x) 0) #\?)))
+</pre>
+
+<p>
+  In clojure:
+</p>
+
+
+<pre class="src src-clojure">(<span style="color: #00ffff;">defn</span> <span style="color: #87cefa;">variable?</span> [x]
+  (<span style="color: #b0c4de;">let</span> [x-str (<span style="color: #eedd82;">str</span> x)]
+    (<span style="color: #b0c4de;">and</span> (<span style="color: #b0c4de;">.startsWith</span> x-str <span style="color: #ffa07a;">"?"</span>) (<span style="color: #eedd82;">&gt;</span> (<span style="color: #b0c4de;">.length</span> x-str) 1))))
+</pre>
+
+
+<pre class="example">
+=&gt; #'user/variable?
+</pre>
+
+<p>  I made a few changes to be able to use clojure's abstractions.
+  This version works not only with symbols, like the common lisp version requires, it works with
+  everything which can be converted to a string with the str method. So it doesn't matter if you are
+  testing symbols read with the read function, or if you are testing a string.
+</p>
+<p>
+  To test whether an input matches the pattern, the pat-match function can just check all elements of the
+  input wheter they are variables. If they are, then it matches anything, if not, if fails if the input is not
+  the same as the pattern.
+</p>
+<p>
+  But how can the symbols be substituted when a match was succesful. It is great to have the functions pre- and
+  postwalk-replace in the namespace clojure.walk, which substitutes elements in a tree given a substitution map.
+</p>
+</div>
+</div>
+</div>
+
+<div id="postamble">
+<p class="date">Date: 2012-06-03T10:12+0200</p>
+<p class="author">Author: Maik Schünemann</p>
+<p class="creator">Org version 7.8.09 with Emacs version 23</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+
+</div>
+</body>
+</html>

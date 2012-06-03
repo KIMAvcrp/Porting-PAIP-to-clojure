@@ -1,4 +1,4 @@
-#+TITLE:Porting PAIP to clojure - Chapter 4: GPS - Part 1
+#+TITLE:Porting PAIP to clojure - Chapter 4: GPS - The General Problem Solver
 #+AUTHOR: Maik Schünemann
 #+email: maikschuenemann@gmail.com
 #+BABEL: :results output :exports both :tangle yes
@@ -8,8 +8,10 @@
     
 #+end_src 
 * PAIP to clojure - chapter 4
-  I continue to translate PAIP to clojure. This chapter covers the GPS program, the
-  General Problem Solver. As ever, the focus lies on the iterative process of developing
+  I continue to translate PAIP to clojure.
+  As always, it is possible to follow the post even without reading PAIP, but I encourage you to do so.
+  This chapter covers the GPS program, the
+  General Problem Solver. As always, the focus lies on the iterative process of developing
   an (ai-) progam. Norvig presents 5 stages of an programming project, after which the
   sections of the chapter are numbered:
   1. Description
@@ -17,55 +19,54 @@
   3. Implementation                     
   4. Testing                            
   5. Debugging/Analysis (optional repeat)
-  In this post, I will describe the first four steps, from an idea to the first running program. The analysis 
-  and refinement of the program will be covered in part 2.
-** 1. Description
-   GPS was the first program, which separated its problem-solving strategy from its knowledge of particular
-   problems. As problem-solving strategy it used [[http://en.wikipedia.org/wiki/Means-ends_analysis][means-ends analysis]]. In means-ends analysis you know in what
-   state you are right now and in what state you will be when you have solved your problem. The focus lies
-   on what is between your state now and the goal-state and how this distance can be overcome.
+
+** Description
+   GPS was the first program which separated its problem-solving strategy from its knowledge of particular
+   problems. It used [[http://en.wikipedia.org/wiki/Means-ends_analysis][means-ends analysis]] as problem-solving strategy. In means-ends analysis, you know in what
+   state you are right now and in what state you will be when you have solved your problem, but you consider
+   what is between your state now and the goal-state and how this distance can be overcome.
    An Example:
-   I have to write an email. What Do I need to do to write an-email ? I have to type. What do I need to type?
-   I have to sit in front of my pc ? What do I need to do to sit in front of my pc ? Go to the PC ....
+   I have to write a blog-post. What Do I need to do to write an blog-post? I have to type it.
+   What do I need to type it? I have to sit in front of my pc.
+   What do I need to do to sit in front of my pc ? Go to the PC ....
 
    It is obvious that we have to be able to answer "What do I need to  ... "or, like the book points out "What is the
    difference between..." from the set of all possible actions. And each actions could have itself preconditions,
-   for  which actions have to be taken befor this action can be taken.
+   for  which actions have to be taken befor it can be taken.
    This is a very brief description, I encourage you to read the section in PAIP for the full discussion.
-** 2. Specification
-   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: Specification.
+** Specification
+   After having a (rough) Idea of how the means-ends analysis works, it is time to come to the second step: specification.
    In this stage, we refine the description to something that is representible in the implementation language.
-   This also gives the starting point for the implementation,greatly influencing the design part.
-   I tink the stage of Specification is best described with:
+   I tink, the stage of specification is best described as follows:
    Find the most natural mapping between the problem and the implementation language!
-   So let's see how means-ends analysis can be represented in clojure:
-    - A state can be represented as a set of conditions, so as #{unknown poor} and #{rich famous}. We need 2 states:
-     the current state and the goal state (which of the two above is the goal-state...?)
-    - The allowable actions can naturally be represented as a collection of actions, which can be worked in 
-      order to find the first, that is applicable
-    - An  needs a Name, a descriptions of what states a person has to be in in order to take the action and
-      a description what states of the person will change after taking the action. 
-      An action can therefor be described by a map (or later by a record) with a :action and a :precond field. 
-      The changes of the state of the acting person are trickier. Consider an action "Become rich" has as precond
+
+   So, let's see how means-ends analysis can be represented in clojure:
+    - A state can be represented as a set of conditions, for example #{unknown poor} and #{rich famous}. We need 2 states:
+     the current state and the goal state (try to guess which of the two above is the goal-state...?)
+    - The allowable actions can naturally be represented as a collection of actions, which can be worke
+    - An action needs a Name, a descriptions of what states a person has to be in in order to take the action and
+      a description of what states of the person will change after taking the action. 
+      An action can therefore be described by a map (or later by a record) with a :action and a :precond field. 
+      The changes of the state of the acting person are trickier. Consider an action "Become rich" that has as precond
       being poor and changes that to being rich. It could also remove states or add new ones. The change of one 
       state to the other can easily be represented in terms of removing the old one and adding the new one.
       Thus the Action will have two more fields, a :del-list and a :add-list which contains states which will 
-      be added or removed from the person who takes the action.
+      be added or removed from the current state after taking the action.
     - Last, but not least, we have to specify the entry point of the application, the GPS-function.
-      We need a start-state, a goal-state and the allowed actions. Thus it can be represented as a function which
-      takes a start-state and a goal states, and works with the *ops* variable.
+      We need a start-state, a goal-state and the allowed actions. It can be represented as a function which
+      takes a start-state and a goal states, and works with the *ops* var.
    
   Now we have specified the single entities of the program. The algorithm is next to go:
-  GPS succeeds if it can achieve all single conditions in the goal state by applying a sequence of actions.
-  To decide wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
-  add-list the action is appropriate and GPS wants to take the action. It can take the action if it can achieve
+  GPS succeeds, if it can achieve all single conditions in the goal state by applying a sequence of actions.
+  To decide, wheter to apply an action or not, we have to look in its add list. If a goal-condition is in the
+  add-list, the action is appropriate and GPS wants to take the action. It can only take the action, if it can achieve
   all preconds of the action, which is just calling itself with the preconds as goal-state, updating the current
-  state as it goes along. If was able to achieve every condition of the goal state, it succeedes
+  state as it goes along. If it was able to achieve every condition of the goal state, it succeedes
   (Note that this is the first, most simplest specification, it will be refined in part 2).
   Ok, this is enough for the first implementation of the program!
-** 3. Implementation
-     First, here is a sample operations list. It becomes easier for me to implement, when I see the data my code
-     works with:
+** Implementation
+     First, let's have a look at a sample operations list. I find it easier to implement the program, if I see
+     with what data it works with:
      #+begin_src clojure :results output :exports both
      (ns PAIP2clojure.Chapter4)
 
@@ -97,10 +98,10 @@
      : => #'PAIP2clojure.Chapter4/*ops*
 
   In the implementation, I choose not follow Norvigs route and
-  modify the current state in the function. Instead I changed the implementation
-  to be side-effect free and hence more ideomatic clojure.
+  modify the current state in the function, which would require something like an atom or agent in clojure.
+  Instead I changed the implementation to be side-effect free and hence more ideomatic clojure.
   Here is the implementation from the book:
-  #+begin_src clojure :exports both :results output
+  #+begin_src common-lisp :exports both :results output
   (defvar *state* nil "The current state: a list of conditions.")
 
   (defvar *ops* nil "A list of available operators.")
@@ -138,15 +139,15 @@
   and reduces the collection applying the function. When the result is nil, the function returns nil.
 
   Notice the use of the with-auto-declare macro which I described in a previous post. This let me avoid
-  to add a declare binding everytime I make a forward declaration. If a symbol starts with D!-, a forward-declaration
+  to add a declare binding everytime I make a forward declaration. If a symbol starts with _, a forward-declaration
   will be automagically added for it.
   #+begin_src clojure :exports both :results output
-    (with-auto-declare
-     (use 'clojure.set)
-     (use 'auto-declare.core)
-
+   (use 'clojure.set)
+   (use 'auto-declare.core)
+  
+  (with-auto-declare _  
      (defn GPS [state goals]
-       (let [new-state (D!-every-accum? D!-achieve state goals)]
+       (let [new-state (_every-accum? _achieve state goals)]
          (if (nil? new-state)
            'not-solved
            'solved)))
@@ -157,8 +158,8 @@
        [current-state goal]
        (if (contains? current-state goal)
          current-state
-          (some (partial D!-apply-op current-state)
-            (filter #(D!-appropriate? goal %) *ops*))))
+          (some (partial _apply-op current-state)
+            (filter #(_appropriate? goal %) *ops*))))
     
      (defn appropriate? [goal op]
        (contains? (:add-list op) goal))
@@ -176,7 +177,7 @@
                (-> new-current-state (difference (:del-list op)) (union (:add-list op))))))))
    #+end_src
   #+RESULTS:
-  : => #'PAIP2clojure.Chapter4/apply-op
+ : => #'PAIP2clojure.Chapter4/apply-op
   Ok, now comes the 4. stage: Testing
 ** Testing
   Let's test the implementation with the *ops* defined above and see how it works.
@@ -283,3 +284,264 @@ In my next Post I will show the analysis of the implementation and a refinement 
 limitations f it.
 So stay tuned for part 2.
 As always, comments/advices etc are welcome.
+** Analysis
+   It turns out, that the GPS is not very general, at least our implementation is not.
+   Norvig does a great analysis explaining the reasons why the program can not handle many situations.
+   I will give a short summary of the discussion, describing the problems and a miminal explanation why the program fails.
+   - Running around the block - GPS don't have any notion of actions, that add nothing to the :add-list, like
+     'running-around-the-block'. There has to be a state like "got-some-exercise" in the :add-list
+   - Clobbered Sibling Goal - In the current implementation, GPS solves every goal independent and in sequence.
+     That means, if solving the second problem undoes a previous goal, GPS will falsly return success.
+     In the school-ops world, consider #{have-money son-at-school}.
+     The program has to be modified, so that it checks after achieving all goals that the state is still a subset 
+     of the goal-state
+   - Leaping before you look - sometimes, gps will fail, but executes some action before it recognizes that.
+     In the current implementation, planning and execution are interleaved. This will be addressent by returning
+     the list of actions instead of just printing the actions.
+   - Recursive Subgoal Problem - suppose we would add another operator to the school-ops "ask-phone-number" with
+     the precondition of being in communication with the shop. GPS will try to achieve know-phone-number with 
+     ask-phone-number, which requires to be in communication with the shop, which requires knowing the phone-number
+     ... It tries to solve the problem in terms of itself. To address this, we have to add a goal-stack, and let
+     GPS give-up if it recognizes a circle.
+   - Lack of Intermediate Information - As at the leaping before you look problem, it is better to return a list
+     of actions instead of just solved. This makes it easier for other parts of the program to interact with GPS
+
+** Back to implementation - A more general version 2
+   Before we come to the implementation of the program, it helps to get a good debugging tool, so that we can
+   see what it is doing:
+   #+begin_src clojure :exports both :results output :tangle yes
+     (def ^:dynamic *dbg-ids*)
+     (defn debug
+       ([id str] (debug id 0 str))
+       ([id indent str]
+        (when (contains? *dbg-ids* id)
+         (do (dotimes [i indent]
+               (print " "))
+             (println str)))))
+   #+end_src
+
+   #+RESULTS:
+   : => #'PAIP2clojure.Chapter4/debug
+
+   Here is the common-lisp code. It first transforms all the ops to a new form, which has an '(Executing action)
+   in its add list.
+   #+begin_src common-lisp
+   (defun executing-p (x)
+  "Is x of the form: (executing ...) ?"
+  (starts-with x 'executing))
+
+  (defun starts-with (list x)
+    "Is this a list whose first element is x?"
+    (and (consp list) (eql (first list) x)))
+
+(defun convert-op (op)
+  "Make op conform to the (EXECUTING op) convention."
+  (unless (some #'executing-p (op-add-list op))
+    (push (list 'executing (op-action op)) (op-add-list op)))
+  op)
+
+(defun op (action &key preconds add-list del-list)
+  "Make a new operator that obeys the (EXECUTING op) convention."
+  (convert-op
+    (make-op :action action :preconds preconds
+             :add-list add-list :del-list del-list)))
+
+;;; ==============================
+
+(mapc #'convert-op *school-ops*)
+
+  #+end_src
+   The new version of GPS will return the new state instead of printing the actions and removes all non-atoms from
+   the state so that only (Executing action) forms are left
+   
+  #+begin_src common-lisp
+  (defvar *ops* nil "A list of available operators.")
+
+(defstruct op "An operation"
+  (action nil) (preconds nil) (add-list nil) (del-list nil))
+
+(defun GPS (state goals &optional (*ops* *ops*))
+  "General Problem Solver: from state, achieve goals using *ops*."
+  (remove-if #'atom (achieve-all (cons '(start) state) goals nil)))
+
+
+(defun achieve-all (state goals goal-stack)
+  "Achieve each goal, and make sure they still hold at the end."
+  (let ((current-state state))
+    (if (and (every #'(lambda (g)
+                        (setf current-state
+                              (achieve current-state g goal-stack)))
+                    goals)
+             (subsetp goals current-state :test #'equal))
+        current-state)))
+
+(defun achieve (state goal goal-stack)
+  "A goal is achieved if it already holds,
+  or if there is an appropriate op for it that is applicable."
+  (dbg-indent :gps (length goal-stack) "Goal: ~a" goal)
+  (cond ((member-equal goal state) state)
+        ((member-equal goal goal-stack) nil)
+        (t (some #'(lambda (op) (apply-op state goal op goal-stack))
+                 (find-all goal *ops* :test #'appropriate-p)))))
+
+
+(defun member-equal (item list)
+  (member item list :test #'equal))
+
+
+(defun apply-op (state goal op goal-stack)
+  "Return a new, transformed state if op is applicable."
+  (dbg-indent :gps (length goal-stack) "Consider: ~a" (op-action op))
+  (let ((state2 (achieve-all state (op-preconds op) 
+                             (cons goal goal-stack))))
+    (unless (null state2)
+      ;; Return an updated state
+      (dbg-indent :gps (length goal-stack) "Action: ~a" (op-action op))
+      (append (remove-if #'(lambda (x) 
+                             (member-equal x (op-del-list op)))
+                         state2)
+              (op-add-list op)))))
+
+(defun appropriate-p (goal op)
+  "An op is appropriate to a goal if it is in its add list."
+  (member-equal goal (op-add-list op)))
+  #+end_src
+
+  The function achieve-all abstracts away the (every #'achieve ...) from the first version and checks whether
+  the resulting state is still a subset of the goal-state. Also, it updates the current state for each application
+  of achieve (destructively modifying..)
+
+  Also note, that in apply-op append and remove-if are used. They are needed because in this version, the order
+  of the conditions in the current state counts (because they contain (Executing action) elements.
+
+  Again, I will not follow the implementation given in PAIP. Especially I want to avoid the side-effects in
+  achieve-all and the mixing of actual conditions and (Executing action) forms, which would prevent to represent
+  states with sets. It turned out, that I needed only three small changes from the first version of the program:
+ 
+  - The state is now divided in the current-state and a list-of-actions taken so far. Thanks to clojure's destructuring,
+    it is easy to take the state apart again.
+  - there is a goal-stack which contains all goals tried so far. achieve gives up if it encounters a goal that is 
+    in the goal-stack to avoid stack-overflow-errors.
+  - every-time an action is executed, it is appendet to the list-of-actions.
+
+  #+begin_src clojure :exports both :results output
+     (use 'clojure.set)
+     (use 'auto-declare.core)
+    
+    (with-auto-declare _  
+       (defn GPS [state goals]
+         (let [[new-state list-of-actions] (_every-accum? (partial achieve []) [state []] goals)]
+           (if (nil? new-state)
+             nil
+             list-of-actions)))
+    
+       (defn achieve
+         "return the new-state after the goal is achieved or nil
+          if it could not be archieved"
+         [goal-stack [current-state list-of-actions] goal]
+         (debug :gps (count goal-stack) (str "Goal " goal))
+         (cond (contains? current-state goal) [current-state list-of-actions]
+               (contains? goal-stack goal) [nil list-of-actions]
+               :else (some (partial _apply-op goal-stack goal [current-state list-of-actions])
+                           (filter #(_appropriate? goal %) *ops*))))
+      
+       (defn appropriate? [goal op]
+         (contains? (:add-list op) goal))
+          
+       (defn every-accum? [func start coll]
+         (reduce #(if (nil? %1)
+                    nil
+                    (func %1 %2)) start coll))
+     
+       (defn apply-op [goal-stack goal state op]
+         (debug :gps (count goal-stack) (str "Consider: " (:action op)))
+         (let [[new-current-state new-list-of-actions](every-accum? (partial achieve (conj goal-stack goal))
+                                                                    state (:preconds op))]
+           (if (nil? new-current-state)
+             [nil new-list-of-actions]
+             (do (debug :gps (count goal-stack) (str "Action " (:action op)))
+                 [(-> new-current-state (difference (:del-list op)) (union (:add-list op)))
+                  (conj new-list-of-actions (:action op))])))))
+    
+  #+end_src
+
+  #+RESULTS:
+  : => #'PAIP2clojure.Chapter4/apply-op
+
+  This implementation solves the problems mentioned above.
+  The next parts of Chapter 4 show how the program performs in new domains. Feel free to port the
+  ops in these domains to clojure and report whether the program worked or not.
+  Here is one example domain: monkey and bananas:
+  #+begin_src clojure :exports both :results output
+  (def ^:dynamic *banana-ops*
+  [{:action "climb-on-chair"
+    :preconds #{"chair-at-middle-room" "at-middle-room" "on-floor"}
+    :add-list #{"at-bananas" "on-chair"}
+    :del-list #{"at-middle-room" "on-floor"}}
+   {:action "push-chair-from-door-to-middle-room"
+    :preconds #{"chair-at-door" "at-door"}
+    :add-list #{"chair-at-middle-room" "at-middle-room"}
+    :del-list #{"chair-at-door" "at-middle-room"}}
+   {:action "walk-from-door-to-middle-room"
+    :preconds #{"at-door" "on-floor"}
+    :add-list #{"at-middle-room"}
+    :del-list #{"at-door"}}
+   {:action "grasp-bananas"
+    :preconds #{"at-bananas" "empty-handed"}
+    :add-list #{"has-bananas"}
+    :del-list #{"at-door"}}
+   {:action "drop-ball"
+    :preconds #{"has-ball"}
+    :add-list #{"empty-handed"}
+    :del-list #{"has-ball"}}
+   {:action "eat-bananas"
+    :preconds #{"has-bananas"}
+    :add-list #{"empty-handed" "not-hungry"}
+    :del-list #{"has-bananas" "hungry"}}])
+
+(def ^:dynamic *ops* *banana-ops*)
+  #+end_src
+
+  #+RESULTS:
+  : => #'PAIP2clojure.Chapter4/*ops*
+
+  #+begin_src clojure :exports both :results output
+  (binding [*dbg-ids* #{:gps }]
+    (GPS #{"at-door" "on-floor" "has-ball" "hungry" "chair-at-door"}
+         #{"not-hungry"}))
+  #+end_src
+
+  #+RESULTS:
+:  Goal not-hungry
+:  Consider: eat-bananas
+:   Goal has-bananas
+:   Consider: grasp-bananas
+:    Goal empty-handed
+:    Consider: drop-ball
+:     Goal has-ball
+:    Action drop-ball
+:    Goal at-bananas
+:    Consider: climb-on-chair
+:     Goal chair-at-middle-room
+:     Consider: push-chair-from-door-to-middle-room
+:      Goal chair-at-door
+:      Goal at-door
+:     Action push-chair-from-door-to-middle-room
+:     Goal at-middle-room
+:     Goal on-floor
+:    Action climb-on-chair
+:   Action grasp-bananas
+:  Action eat-bananas
+  : => ["drop-ball" "push-chair-from-door-to-middle-room" "climb-on-chair" "grasp-bananas" "eat-bananas"]
+
+
+  The Chapter in PAIP ends with a discussion of how general the gps really is. It turns out that it has severe
+  limitations and I encourage everyone to read the sections in the book. Many of this issues will be addressed
+  in later chapters using more sophisticated techniques like full-fledged search and backtracking, like
+  prolog does.
+
+  Puh, that was more work than I thought. But I hope that I managed to translate it to ideomatic clojure which is not
+  to hard to follow.
+  Feel free to comment, if you have questions, anything is not clear, you enounter bugs or have some other advice.
+
+  Chapter 5 is next to come. It contains an implementation of the ELIZA program.

@@ -1,0 +1,62 @@
+#+TITLE:Porting PAIP to clojure - Chapter 5: ELIZA - Dialog with a machine 
+#+AUTHOR: Maik Schünemann
+#+email: maikschuenemann@gmail.com
+#+STARTUP:showall
+-----
+* PAIP to clojure - Chapter 5: Eliza - Dialog with a machine
+  This chapter contains an implementation of the program called ELIZA which could, given appropriate rules,
+  emulate an Rogerian psychoanalyst.
+  You can try ELIZA if you are using emacs by hitting M-x doctor and start telling about your problems.
+
+  Although ELIZA seems to be very sophisticated being able to emulate humans (in a very restricted area),
+  It consists merely of a pattern matching tool and a set of rules, which allows it to transform the
+  input to output.
+  
+* Description and specification of ELIZA
+  This is the ELIZA algorithm:
+  1. Read an input
+  2. Find a pattern that matches the input
+  3. Transform the input into a response
+  4. Print the response
+  Norvig follows the route of least resistance and uses lisp's built in capabilities to read lisp code and
+  print it. This is a good showcase of how good lisp is for quick prototyping.
+  Half of the problems are thus trivial, the hard part comes with 2. and 3.
+  We need a representation of an general pattern and input, responses to the pattern and the transformation
+  of the input according to the rules for the pattern it matches.
+  Here is an example:
+  #+begin_src quoted text
+  Pattern: (I need a X)
+  Response: (what would it mean to you if you got a X ?)
+
+  Input: (I need a vacation)
+  Transformation: (what yould it mean to you if you got a vacation ?)
+  #+end_src
+
+  The pattern matches must match normal atoms with itself, but it has to recognize a variable like X.
+  In PAIP, variables are starting with an ?
+  #+begin_src common lisp
+  (defun variable-p (x)
+  "Is x a variable (a symbol beginning with `?')?"
+  (and (symbolp x) (equal (elt (symbol-name x) 0) #\?)))
+  #+end_src
+  In clojure:
+  #+begin_src clojure :exports both :results output :tangle yes
+    (defn variable? [x]
+      (let [x-str (str x)]
+        (and (.startsWith x-str "?") (> (.length x-str) 1))))
+  #+end_src
+
+  #+RESULTS:
+  : => #'user/variable?
+  I made a few changes to be able to use clojure's abstractions.
+  This version works not only with symbols, like the common lisp version requires, it works with
+  everything which can be converted to a string with the str method. So it doesn't matter if you are
+  testing symbols read with the read function, or if you are testing a string.
+
+  To test whether an input matches the pattern, the pat-match function can just check all elements of the
+  input wheter they are variables. If they are, then it matches anything, if not, if fails if the input is not
+  the same as the pattern.
+
+  But how can the symbols be substituted when a match was succesful. It is great to have the functions pre- and
+  postwalk-replace in the namespace clojure.walk, which substitutes elements in a tree given a substitution map.
+  
